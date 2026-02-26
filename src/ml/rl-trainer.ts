@@ -307,26 +307,17 @@ export class RlTrainer {
     return simulatePolicy(candles, model, cfg);
   }
 
-  walkForward(
+  walkForwardFixed(
     candles: Candle[],
     model: RlLinearQPolicyModel,
     options: Partial<SimulatorOptions> = {},
     folds: number = 4,
-    trainOptions: Partial<RlTrainerOptions> = {},
     purgeBars: number = 100,
   ): RlWalkForwardSummary {
     const cfg = { ...defaultSimulatorOptions, ...options };
     const sorted = [...candles].sort((a, b) => a.openTime - b.openTime);
     if (sorted.length < 350) {
-      return {
-        folds: [],
-        avgSharpe: 0,
-        avgSortino: 0,
-        avgProfitFactor: 0,
-        avgWinRate: 0,
-        avgNetPnl: 0,
-        maxDrawdown: 0,
-      };
+      return this.emptyWalkForwardSummary();
     }
 
     const foldResults: RlWalkForwardFold[] = [];
@@ -335,11 +326,50 @@ export class RlTrainer {
       const trainEnd = segment * (i + 1);
       const testStart = trainEnd + Math.max(0, purgeBars);
       const testEnd = Math.min(sorted.length, testStart + segment);
+      const testSlice = sorted.slice(testStart, testEnd);
+      if (testSlice.length < 80) continue;
+
+      const result = simulatePolicy(testSlice, model, cfg);
+      foldResults.push({
+        fold: i + 1,
+        trainRange: [sorted[0].openTime, sorted[Math.max(0, trainEnd - 1)].openTime],
+        testRange: [sorted[testStart].openTime, sorted[Math.max(testStart, testEnd - 1)].openTime],
+        trainedEpisodes: 0,
+        trainAvgEpisodeReward: 0,
+        result,
+      });
+    }
+
+    return this.buildWalkForwardSummary(foldResults);
+  }
+
+  walkForwardRetrainWarmStart(
+    candles: Candle[],
+    seedModel: RlLinearQPolicyModel,
+    options: Partial<SimulatorOptions> = {},
+    folds: number = 4,
+    trainOptions: Partial<RlTrainerOptions> = {},
+    purgeBars: number = 100,
+  ): RlWalkForwardSummary {
+    const cfg = { ...defaultSimulatorOptions, ...options };
+    const sorted = [...candles].sort((a, b) => a.openTime - b.openTime);
+    if (sorted.length < 350) {
+      return this.emptyWalkForwardSummary();
+    }
+
+    const foldResults: RlWalkForwardFold[] = [];
+    const segment = Math.floor(sorted.length / (folds + 1));
+    let warmModel = seedModel;
+    for (let i = 0; i < folds; i += 1) {
+      const trainEnd = segment * (i + 1);
+      const testStart = trainEnd + Math.max(0, purgeBars);
+      const testEnd = Math.min(sorted.length, testStart + segment);
       const trainSlice = sorted.slice(0, trainEnd);
       const testSlice = sorted.slice(testStart, testEnd);
       if (trainSlice.length < 240 || testSlice.length < 80) continue;
 
-      const foldTraining = this.train(trainSlice, trainOptions);
+      const foldTraining = this.train(trainSlice, trainOptions, warmModel);
+      warmModel = foldTraining.model;
       const result = simulatePolicy(testSlice, foldTraining.model, cfg);
       foldResults.push({
         fold: i + 1,
@@ -351,16 +381,35 @@ export class RlTrainer {
       });
     }
 
+    return this.buildWalkForwardSummary(foldResults);
+  }
+
+  walkForward(
+    candles: Candle[],
+    model: RlLinearQPolicyModel,
+    options: Partial<SimulatorOptions> = {},
+    folds: number = 4,
+    trainOptions: Partial<RlTrainerOptions> = {},
+    purgeBars: number = 100,
+  ): RlWalkForwardSummary {
+    return this.walkForwardRetrainWarmStart(candles, model, options, folds, trainOptions, purgeBars);
+  }
+
+  private emptyWalkForwardSummary(): RlWalkForwardSummary {
+    return {
+      folds: [],
+      avgSharpe: 0,
+      avgSortino: 0,
+      avgProfitFactor: 0,
+      avgWinRate: 0,
+      avgNetPnl: 0,
+      maxDrawdown: 0,
+    };
+  }
+
+  private buildWalkForwardSummary(foldResults: RlWalkForwardFold[]): RlWalkForwardSummary {
     if (foldResults.length === 0) {
-      return {
-        folds: [],
-        avgSharpe: 0,
-        avgSortino: 0,
-        avgProfitFactor: 0,
-        avgWinRate: 0,
-        avgNetPnl: 0,
-        maxDrawdown: 0,
-      };
+      return this.emptyWalkForwardSummary();
     }
 
     return {
@@ -506,22 +555,16 @@ export class RlTrainer {
         const pnlReturn = pnl / normalizationBase;
         const normalizedCosts = costs / normalizationBase;
         const shapedPnl = shapePnlReward(pnlReturn);
-        const holdPenalty = executedDecision && executedDecision.action === 0 ? cfg.rewardHoldPenalty : 0;
-        const actionBonus = executedDecision && executedDecision.action !== 0 ? cfg.rewardActionBonus : 0;
         // TD reward now includes the same cost/drawdown signals that the evaluator uses.
         // This aligns what the agent optimises with how it is scored.
         // - `pnlReturn`: normalised position PnL (replaces raw `position * priceRet`)
         // - `normalizedCosts * rewardCostWeight`: penalises each trade proportionally
         // - `ddPenalty`: discourages policies that cause large drawdowns
         // - `frequencyPenalty`: existing penalty for flipping too fast
-        // - `holdPenalty`: discourages staying idle without signal
-        // - `actionBonus`: keeps the agent from over-prioritising hold
         const reward = pnlReturn
           - normalizedCosts * cfg.rewardCostWeight
           - ddPenalty
-          - frequencyPenalty
-          - holdPenalty
-          + actionBonus;
+          - frequencyPenalty;
         // `shapedPnl` is the bounded economic PnL metric (via pnlRewardBands).
         // Used only for telemetry/logging, not for TD updates.
         totalReward += reward;

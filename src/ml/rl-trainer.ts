@@ -485,15 +485,22 @@ export class RlTrainer {
         peak = Math.max(peak, equity);
         const drawdown = peak <= 0 ? 0 : (peak - equity) / peak;
         const ddPenalty = drawdown * cfg.drawdownPenaltyFactor;
-        const normalizationBase = Math.max(1e-6, stepNotional);
-        const pnlReturn = pnl / normalizationBase;
-        const normalizedCosts = costs / normalizationBase;
-        const shapedPnl = shapePnlReward(pnlReturn);
-        // `reward` is the raw TD target (position * priceReturn - frequencyPenalty).
-        // Used for Q-learning updates; can be negative even when trades are profitable.
-        const reward = state.position * priceRet - frequencyPenalty;
-        // `shapedPnl` is the bounded economic PnL metric (via pnlRewardBands).
-        // Used only for telemetry/logging, not for TD updates.
+const normalizationBase = Math.max(1e-6, stepNotional);
+const pnlReturn = pnl / normalizationBase;
+const normalizedCosts = costs / normalizationBase;
+const shapedPnl = shapePnlReward(pnlReturn);
+// TD reward now includes the same cost/drawdown signals that the evaluator uses.
+// This aligns what the agent optimises with how it is scored.
+// - `pnlReturn`: normalised position PnL (replaces raw `position * priceRet`)
+// - `normalizedCosts * rewardCostWeight`: penalises each trade proportionally
+// - `ddPenalty`: discourages policies that cause large drawdowns
+// - `frequencyPenalty`: existing penalty for flipping too fast
+const reward = pnlReturn
+  - normalizedCosts * cfg.rewardCostWeight
+  - ddPenalty
+  - frequencyPenalty;
+// `shapedPnl` is the bounded economic PnL metric (via pnlRewardBands).
+// Used only for telemetry/logging, not for TD updates.
         totalReward += reward;
         totalShapedPnl += shapedPnl;
         totalCosts += normalizedCosts;

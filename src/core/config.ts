@@ -193,7 +193,7 @@ export const config: AppConfig = {
     retrainCandlesLimit: parseNumber(process.env.ML_RETRAIN_CANDLES_LIMIT, 50_000),
     retrainFillsLimit: parseNumber(process.env.ML_RETRAIN_FILLS_LIMIT, 20_000),
     supervisedWfFolds: parseNumber(process.env.ML_SUPERVISED_WF_FOLDS, 4),
-    rlWfFolds: parseNumber(process.env.ML_RL_WF_FOLDS, 4),
+  rlWfFolds: parseNumber(process.env.ML_RL_WF_FOLDS, 2),
     pretrainMonths: parseNumber(process.env.ML_PRETRAIN_MONTHS, 6),
     pretrainMinCandles: parseNumber(process.env.ML_PRETRAIN_MIN_CANDLES, 20_000),
     pretrainWfFolds: parseNumber(process.env.ML_PRETRAIN_WF_FOLDS, 4),

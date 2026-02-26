@@ -133,32 +133,23 @@ interface RegimeWindowPlan {
 }
 
 const defaultTrainerOptions: RlTrainerOptions = {
-  // Increased from 180 → 400 so the agent has enough exploration budget
-  // before the LR decays to near-zero and early-stopping fires.
-  episodes: 400,
-  minEpisodes: 120,
-  // Wider patience window: 60 episodes of no improvement before early-stop.
-  // 35 was too tight; variance in episode reward spans 50+ episodes.
-  earlyStopPatience: 60,
-  earlyStopMinDelta: 0.0002,
-  learningRate: 0.04,
+  episodes: 180,
+  minEpisodes: 80,
+  earlyStopPatience: 35,
+  earlyStopMinDelta: 0.0004,
+  learningRate: 0.02,
   gamma: 0.97,
-  // Higher exploration: agent needs to discover profitable trade sequences
-  // before it can start exploiting them.
-  epsilonStart: 0.5,
+  epsilonStart: 0.35,
   epsilonEnd: 0.05,
   feeBps: 4,
   slippageBps: 2,
   latencyBars: 1,
   riskPerTradePct: 0.8,
-  turnoverPenaltyBps: 0.1,
-  drawdownPenaltyFactor: 0.02,
-  // Reduced cost weight 0.5→0.08 so PnL signal dominates reward.
-  // Old value caused cost penalties to swamp the trading signal.
-  rewardCostWeight: 0.08,
-  // Reduced hold penalty 10x: was so large it forced a "never trade" policy.
-  rewardHoldPenalty: 0.000012,
-  rewardActionBonus: 0.000015,
+  turnoverPenaltyBps: 0.2,
+  drawdownPenaltyFactor: 0.05,
+  rewardCostWeight: 0.5,
+  rewardHoldPenalty: 0.00012,
+  rewardActionBonus: 0.00005,
   regimeBalanced: true,
   regimeLookbackBars: 96,
   regimeEpisodeBars: 320,

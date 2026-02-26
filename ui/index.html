@@ -1,0 +1,411 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hydra Trader Monitor</title>
+    <style>
+      :root {
+        --bg: #090b10;
+        --surface: #121722;
+        --text: #e8edf5;
+        --muted: #94a3b8;
+        --line: #38bdf8;
+        --line2: #22c55e;
+        --line3: #f97316;
+        --border: #20283a;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+        background: radial-gradient(circle at 20% 0%, #141b2b 0%, var(--bg) 45%);
+        color: var(--text);
+      }
+      main {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 24px;
+      }
+      .panel {
+        background: color-mix(in oklab, var(--surface) 88%, black);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 18px;
+        margin-bottom: 14px;
+      }
+      .panel h2 {
+        margin: 0 0 8px;
+        font-size: 18px;
+      }
+      h1 {
+        margin: 0 0 10px;
+      }
+      p {
+        margin: 0;
+        color: var(--muted);
+      }
+      .row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: center;
+        margin-top: 14px;
+      }
+      label {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      select {
+        background: #0e1320;
+        border: 1px solid #243047;
+        color: var(--text);
+        border-radius: 8px;
+        padding: 8px 10px;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 10px;
+      }
+      .kpi {
+        border: 1px solid #273247;
+        background: #0e1422;
+        border-radius: 10px;
+        padding: 10px;
+        min-height: 72px;
+      }
+      .kpi .label {
+        display: block;
+        color: var(--muted);
+        font-size: 12px;
+        margin-bottom: 6px;
+      }
+      .kpi .value {
+        font-size: 18px;
+        font-weight: 600;
+      }
+      .chart {
+        width: 100%;
+        height: 240px;
+        background: #0f1524;
+        border-radius: 10px;
+        border: 1px solid #273247;
+      }
+      .line {
+        fill: none;
+        stroke: var(--line);
+        stroke-width: 2;
+      }
+      .line2 {
+        fill: none;
+        stroke: var(--line2);
+        stroke-width: 2;
+      }
+      .line3 {
+        fill: none;
+        stroke: var(--line3);
+        stroke-width: 2;
+      }
+      .meta {
+        margin-top: 8px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        color: var(--muted);
+        font-size: 14px;
+      }
+      .live-dot {
+        color: var(--line2);
+      }
+      @media (max-width: 960px) {
+        .grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+      @media (max-width: 560px) {
+        .grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <section class="panel">
+        <h1>Hydra Trader Monitor</h1>
+        <p>Market + runtime + risk + RL shadow dashboard (no live orders).</p>
+        <div class="row">
+          <label>
+            Symbol
+            <select id="symbol">
+              <option>BTCUSDT</option>
+              <option>ETHUSDT</option>
+            </select>
+          </label>
+          <label>
+            Timeframe
+            <select id="tf">
+              <option>1m</option>
+              <option>5m</option>
+              <option>1h</option>
+            </select>
+          </label>
+          <div id="globalStatus">Status: loading...</div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Market Candles</h2>
+        <svg class="chart" viewBox="0 0 900 240">
+          <polyline class="line" id="marketCurve" points=""></polyline>
+        </svg>
+        <div class="meta">
+          <div id="marketCount">Candles: -</div>
+          <div id="marketLast">Last: -</div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Runtime / Risk</h2>
+        <div class="grid">
+          <div class="kpi"><span class="label">Stage</span><span class="value" id="stage">-</span></div>
+          <div class="kpi"><span class="label">Kill Switch</span><span class="value" id="killSwitch">-</span></div>
+          <div class="kpi"><span class="label">Equity USD</span><span class="value" id="equityNow">-</span></div>
+          <div class="kpi"><span class="label">Drawdown %</span><span class="value" id="drawdownNow">-</span></div>
+          <div class="kpi"><span class="label">Realized PnL</span><span class="value" id="realizedNow">-</span></div>
+          <div class="kpi"><span class="label">Unrealized PnL</span><span class="value" id="unrealizedNow">-</span></div>
+          <div class="kpi"><span class="label">Paper Win Rate</span><span class="value" id="paperWinRate">-</span></div>
+          <div class="kpi"><span class="label">Paper Profit Factor</span><span class="value" id="paperPf">-</span></div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Equity Curve</h2>
+        <svg class="chart" viewBox="0 0 900 240">
+          <polyline class="line2" id="equityCurve" points=""></polyline>
+        </svg>
+        <div class="meta">
+          <div id="equityPoints">Points: -</div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Drawdown Curve</h2>
+        <svg class="chart" viewBox="0 0 900 240">
+          <polyline class="line3" id="drawdownCurve" points=""></polyline>
+        </svg>
+      </section>
+
+      <section class="panel">
+        <h2>RL Shadow Simulator</h2>
+        <div class="grid">
+          <div class="kpi"><span class="label">RL Enabled</span><span class="value" id="rlEnabled">-</span></div>
+          <div class="kpi"><span class="label">Model Kind</span><span class="value" id="rlModelKind">-</span></div>
+          <div class="kpi"><span class="label">RL Net PnL</span><span class="value" id="rlNetPnl">-</span></div>
+          <div class="kpi"><span class="label">RL Max Drawdown</span><span class="value" id="rlMaxDd">-</span></div>
+          <div class="kpi"><span class="label">RL Trades</span><span class="value" id="rlTrades">-</span></div>
+          <div class="kpi"><span class="label">RL Win Rate</span><span class="value" id="rlWinRate">-</span></div>
+          <div class="kpi"><span class="label">RL Profit Factor</span><span class="value" id="rlPf">-</span></div>
+          <div class="kpi"><span class="label">RL Equity</span><span class="value" id="rlEquity">-</span></div>
+        </div>
+        <svg class="chart" viewBox="0 0 900 240">
+          <polyline class="line" id="rlCurve" points=""></polyline>
+        </svg>
+      </section>
+    </main>
+
+    <script>
+      const symbolEl = document.getElementById('symbol');
+      const tfEl = document.getElementById('tf');
+
+      const globalStatusEl = document.getElementById('globalStatus');
+      const marketCurveEl = document.getElementById('marketCurve');
+      const marketCountEl = document.getElementById('marketCount');
+      const marketLastEl = document.getElementById('marketLast');
+
+      const stageEl = document.getElementById('stage');
+      const killSwitchEl = document.getElementById('killSwitch');
+      const equityNowEl = document.getElementById('equityNow');
+      const drawdownNowEl = document.getElementById('drawdownNow');
+      const realizedNowEl = document.getElementById('realizedNow');
+      const unrealizedNowEl = document.getElementById('unrealizedNow');
+      const paperWinRateEl = document.getElementById('paperWinRate');
+      const paperPfEl = document.getElementById('paperPf');
+
+      const equityCurveEl = document.getElementById('equityCurve');
+      const drawdownCurveEl = document.getElementById('drawdownCurve');
+      const equityPointsEl = document.getElementById('equityPoints');
+
+      const rlEnabledEl = document.getElementById('rlEnabled');
+      const rlModelKindEl = document.getElementById('rlModelKind');
+      const rlNetPnlEl = document.getElementById('rlNetPnl');
+      const rlMaxDdEl = document.getElementById('rlMaxDd');
+      const rlTradesEl = document.getElementById('rlTrades');
+      const rlWinRateEl = document.getElementById('rlWinRate');
+      const rlPfEl = document.getElementById('rlPf');
+      const rlEquityEl = document.getElementById('rlEquity');
+      const rlCurveEl = document.getElementById('rlCurve');
+
+      let candles = [];
+      let equityPoints = [];
+      let rlHistory = [];
+
+      const money = value => {
+        const num = Number(value);
+        if (!Number.isFinite(num)) return '-';
+        return num.toLocaleString(undefined, { maximumFractionDigits: 2 });
+      };
+
+      const pct = value => {
+        const num = Number(value);
+        if (!Number.isFinite(num)) return '-';
+        return `${num.toFixed(2)}%`;
+      };
+
+      const linePoints = (items, valueSelector, width = 900, height = 240, pad = 12) => {
+        if (!items || items.length === 0) return '';
+        const values = items.map(valueSelector).map(Number).filter(Number.isFinite);
+        if (values.length === 0) return '';
+        const min = Math.min(...values);
+        const max = Math.max(...values);
+        const spread = max - min || 1;
+        const usableW = width - pad * 2;
+        const usableH = height - pad * 2;
+
+        return items
+          .map((item, i) => {
+            const x = pad + (i / Math.max(1, items.length - 1)) * usableW;
+            const y = pad + usableH - ((Number(valueSelector(item)) - min) / spread) * usableH;
+            return `${x.toFixed(2)},${y.toFixed(2)}`;
+          })
+          .join(' ');
+      };
+
+      const renderMarket = () => {
+        marketCurveEl.setAttribute('points', linePoints(candles, item => item.close));
+        marketCountEl.textContent = `Candles: ${candles.length}`;
+        if (candles.length > 0) {
+          const last = candles[candles.length - 1];
+          marketLastEl.textContent = `Last: ${last.symbol} ${last.timeframe} close=${Number(last.close).toFixed(2)}`;
+        }
+      };
+
+      const renderEquity = () => {
+        equityCurveEl.setAttribute('points', linePoints(equityPoints, item => item.equityUsd));
+        drawdownCurveEl.setAttribute('points', linePoints(equityPoints, item => item.drawdownPct));
+        equityPointsEl.textContent = `Points: ${equityPoints.length}`;
+      };
+
+      const renderRl = rl => {
+        rlEnabledEl.textContent = rl?.enabled ? 'yes' : 'no';
+        rlModelKindEl.textContent = rl?.modelKind ?? '-';
+        rlNetPnlEl.textContent = money(rl?.netPnlUsd);
+        rlMaxDdEl.textContent = pct(rl?.maxDrawdownPct);
+        rlTradesEl.textContent = Number.isFinite(rl?.trades) ? String(rl.trades) : '-';
+        rlWinRateEl.textContent = pct((rl?.winRate ?? NaN) * 100);
+        rlPfEl.textContent = Number.isFinite(rl?.profitFactor) ? Number(rl.profitFactor).toFixed(2) : '-';
+        rlEquityEl.textContent = money(rl?.equityUsd);
+
+        if (Number.isFinite(rl?.equityUsd)) {
+          rlHistory.push({ ts: Date.now(), equityUsd: Number(rl.equityUsd) });
+          rlHistory = rlHistory.slice(-300);
+        }
+        rlCurveEl.setAttribute('points', linePoints(rlHistory, item => item.equityUsd));
+      };
+
+      const loadCandles = async () => {
+        const symbol = symbolEl.value;
+        const tf = tfEl.value;
+        const res = await fetch(`/candles?symbol=${symbol}&tf=${tf}&limit=240`);
+        const payload = await res.json();
+        candles = payload.candles ?? [];
+        renderMarket();
+      };
+
+      const loadRuntime = async () => {
+        const res = await fetch('/runtime/status');
+        const status = await res.json();
+        stageEl.textContent = status.stage ?? '-';
+        killSwitchEl.textContent = status.killSwitch?.enabled ? `on (${status.killSwitch.reason ?? 'active'})` : 'off';
+        equityNowEl.textContent = money(status.equityUsd);
+        drawdownNowEl.textContent = pct(status.drawdownPct);
+        realizedNowEl.textContent = money(status.realizedPnlUsd);
+        unrealizedNowEl.textContent = money(status.unrealizedPnlUsd);
+        paperWinRateEl.textContent = pct((status.paperMetrics?.winRate ?? NaN) * 100);
+        paperPfEl.textContent = Number.isFinite(status.paperMetrics?.profitFactor)
+          ? Number(status.paperMetrics.profitFactor).toFixed(2)
+          : '-';
+      };
+
+      const loadEquity = async () => {
+        const res = await fetch('/runtime/equity?limit=400');
+        const payload = await res.json();
+        equityPoints = payload.equity ?? [];
+        renderEquity();
+      };
+
+      const loadRl = async () => {
+        const res = await fetch('/rl/status');
+        const payload = await res.json();
+        renderRl(payload);
+      };
+
+      const fullRefresh = async () => {
+        await Promise.all([loadRuntime(), loadEquity(), loadRl()]);
+      };
+
+      const connect = () => {
+        const protocol = location.protocol === 'https:' ? 'wss' : 'ws';
+        const ws = new WebSocket(`${protocol}://${location.host}/stream`);
+        ws.onopen = () => {
+          globalStatusEl.innerHTML = `Status: <span class="live-dot">live</span> ws connected`;
+        };
+        ws.onmessage = event => {
+          const msg = JSON.parse(event.data);
+          if (msg.type !== 'candle') return;
+          const c = msg.payload;
+          if (c.symbol !== symbolEl.value || c.timeframe !== tfEl.value) return;
+          const idx = candles.findIndex(item => item.openTime === c.openTime);
+          if (idx >= 0) candles[idx] = c;
+          else candles.push(c);
+          candles = candles.slice(-240);
+          renderMarket();
+        };
+        ws.onclose = () => {
+          globalStatusEl.textContent = 'Status: reconnecting ws...';
+          setTimeout(connect, 1200);
+        };
+      };
+
+      symbolEl.addEventListener('change', () => {
+        loadCandles().catch(error => {
+          globalStatusEl.textContent = `Status: error loading candles (${error.message})`;
+        });
+      });
+      tfEl.addEventListener('change', () => {
+        loadCandles().catch(error => {
+          globalStatusEl.textContent = `Status: error loading candles (${error.message})`;
+        });
+      });
+
+      const bootstrap = async () => {
+        await loadCandles();
+        await fullRefresh();
+        connect();
+        setInterval(() => {
+          fullRefresh().catch(error => {
+            globalStatusEl.textContent = `Status: polling error (${error.message})`;
+          });
+        }, 4000);
+      };
+
+      bootstrap().catch(error => {
+        globalStatusEl.textContent = `Status: bootstrap error (${error.message})`;
+      });
+    </script>
+  </body>
+</html>

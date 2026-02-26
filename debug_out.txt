@@ -1,0 +1,6 @@
+﻿RL Retrain 1: promoted=true, winRate=0.5807073226025844, netPnl=-382.63542562018483, buy=0.34077380952380953, sell=0.33358843537414967, hold=0.3256377551020408, pf=1.0047102709671838, reason=challenger promoted to champion
+Iter 1: promoted=true, winRate=58.07%, netPnl=-382.64
+RL Retrain 2: promoted=true, winRate=0.4932073242764324, netPnl=-17.414402154005074, buy=0.34625, sell=0.33791666666666664, hold=0.31583333333333335, pf=1.0794057302125948, reason=challenger promoted to champion
+Iter 2: promoted=true, winRate=49.32%, netPnl=-17.41
+RL Retrain 3: promoted=false, winRate=0.4511494252873563, netPnl=-69.1337192423307, buy=0.32934895833333333, sell=0.350078125, hold=0.32057291666666665, pf=1.1277272284106488, reason=challenger score not better than champion
+Iter 3: promoted=false, winRate=45.11%, netPnl=-69.13

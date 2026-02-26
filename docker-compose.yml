@@ -1,0 +1,19 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: hydra-trader
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: 8080
+      DB_PATH: /app/data/trader.db
+      MARKET_MODE: mock
+      SYMBOLS: BTCUSDT,ETHUSDT
+      TIMEFRAMES: 1m,5m,1h
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped

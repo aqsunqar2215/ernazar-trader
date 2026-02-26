@@ -421,7 +421,7 @@ export class TradingEngine {
 
 const computeProfitFactor = (grossProfitUsd: number, grossLossUsd: number): number => {
   if (grossLossUsd === 0) {
-    return grossProfitUsd > 0 ? 999 : 0;
+    return grossProfitUsd > 0 ? 50 : 0;
   }
-  return grossProfitUsd / grossLossUsd;
+  return Math.min(50, grossProfitUsd / grossLossUsd);
 };

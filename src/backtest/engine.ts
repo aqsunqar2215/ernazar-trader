@@ -1,4 +1,6 @@
 import type { Candle, Signal } from '../core/types.js';
+import { computeExecutionCosts } from '../execution/execution-model.js';
+import { extractFeatures, featureLookback } from '../ml/features.js';
 import type { Strategy } from '../strategy/strategy.js';
 
 export interface BacktestTrade {
@@ -29,6 +31,7 @@ export interface BacktestOptions {
   slippageBps: number;
   latencyBars: number;
   riskPerTradePct: number;
+  turnoverPenaltyBps?: number;
 }
 
 interface PositionState {
@@ -36,6 +39,8 @@ interface PositionState {
   quantity: number;
   entryPrice: number;
   entryTs: number;
+  notionalUsd: number;
+  entryCostUsd: number;
 }
 
 export class BacktestEngine {
@@ -67,11 +72,23 @@ export class BacktestEngine {
     const lastPrices = new Map<string, number>();
     const lastCandles = new Map<string, Candle>();
     const equityCurve: number[] = [capital];
+    const featureWindows = new Map<string, Candle[]>();
 
     for (let i = 0; i < sorted.length; i += 1) {
       const candle = sorted[i];
       lastPrices.set(candle.symbol, candle.close);
       lastCandles.set(candle.symbol, candle);
+      const window = featureWindows.get(candle.symbol) ?? [];
+      window.push(candle);
+      if (window.length > featureLookback) {
+        window.splice(0, window.length - featureLookback);
+      }
+      featureWindows.set(candle.symbol, window);
+      const slippageFeatures = window.length >= featureLookback
+        ? extractFeatures(window, [], { position: 0, positionAge: 0, lastTurnoverAge: 0 })
+        : null;
+      const volatility = slippageFeatures ? slippageFeatures[1] : 0;
+      const macdHist = slippageFeatures ? slippageFeatures[5] : 0;
       const signal = strategy.onCandle(candle);
       const latency = Math.max(1, options.latencyBars);
       const queue = pendingSignals.get(candle.symbol) ?? [];
@@ -95,20 +112,27 @@ export class BacktestEngine {
       pendingSignals.set(candle.symbol, pending);
 
       for (const item of executable) {
-        const executionPrice = applyExecutionPrice(candle.close, item.signal.action, options.slippageBps);
-        const feeRate = options.feeBps / 10_000;
-        const notional = capital * (options.riskPerTradePct / 100) * Math.max(0.2, item.signal.strength);
-        const qty = notional / Math.max(1e-9, executionPrice);
+        const markPrice = candle.close;
         const symbol = candle.symbol;
         let position = positions.get(symbol) ?? null;
+        const turnoverPenaltyBps = options.turnoverPenaltyBps ?? 0;
 
         if (item.signal.action === 'buy') {
           if (position && position.quantity < 0) {
+            const closeCosts = computeExecutionCosts({
+              notionalUsd: position.notionalUsd,
+              turnover: 1,
+              feeBps: options.feeBps,
+              slippageBps: options.slippageBps,
+              turnoverPenaltyBps,
+              volatility,
+              macdHistNorm: macdHist,
+            });
+            capital -= closeCosts.totalCost;
             const qtyToClose = Math.abs(position.quantity);
-            const pnl = (position.entryPrice - executionPrice) * qtyToClose;
-            const fee = qtyToClose * executionPrice * feeRate;
-            const net = pnl - fee;
-            capital += net;
+            const gross = (position.entryPrice - markPrice) * qtyToClose;
+            capital += gross;
+            const net = gross - position.entryCostUsd - closeCosts.totalCost;
             returns.push(net / Math.max(1, capital));
             trades.push({
               symbol,
@@ -116,7 +140,7 @@ export class BacktestEngine {
               exitTs: candle.closeTime,
               side: 'short',
               entryPrice: position.entryPrice,
-              exitPrice: executionPrice,
+              exitPrice: markPrice,
               quantity: qtyToClose,
               pnlUsd: net,
             });
@@ -125,17 +149,43 @@ export class BacktestEngine {
           }
 
           if (!position) {
-            const fee = qty * executionPrice * feeRate;
-            capital -= fee;
-            positions.set(symbol, { symbol, quantity: qty, entryPrice: executionPrice, entryTs: candle.openTime });
+            const notional = capital * (options.riskPerTradePct / 100) * Math.max(0.2, item.signal.strength);
+            const qty = notional / Math.max(1e-9, markPrice);
+            const openCosts = computeExecutionCosts({
+              notionalUsd: notional,
+              turnover: 1,
+              feeBps: options.feeBps,
+              slippageBps: options.slippageBps,
+              turnoverPenaltyBps,
+              volatility,
+              macdHistNorm: macdHist,
+            });
+            capital -= openCosts.totalCost;
+            positions.set(symbol, {
+              symbol,
+              quantity: qty,
+              entryPrice: markPrice,
+              entryTs: candle.openTime,
+              notionalUsd: notional,
+              entryCostUsd: openCosts.totalCost,
+            });
           }
         } else if (item.signal.action === 'sell') {
           if (position && position.quantity > 0) {
+            const closeCosts = computeExecutionCosts({
+              notionalUsd: position.notionalUsd,
+              turnover: 1,
+              feeBps: options.feeBps,
+              slippageBps: options.slippageBps,
+              turnoverPenaltyBps,
+              volatility,
+              macdHistNorm: macdHist,
+            });
+            capital -= closeCosts.totalCost;
             const qtyToClose = position.quantity;
-            const pnl = (executionPrice - position.entryPrice) * qtyToClose;
-            const fee = qtyToClose * executionPrice * feeRate;
-            const net = pnl - fee;
-            capital += net;
+            const gross = (markPrice - position.entryPrice) * qtyToClose;
+            capital += gross;
+            const net = gross - position.entryCostUsd - closeCosts.totalCost;
             returns.push(net / Math.max(1, capital));
             trades.push({
               symbol,
@@ -143,7 +193,7 @@ export class BacktestEngine {
               exitTs: candle.closeTime,
               side: 'long',
               entryPrice: position.entryPrice,
-              exitPrice: executionPrice,
+              exitPrice: markPrice,
               quantity: qtyToClose,
               pnlUsd: net,
             });
@@ -152,9 +202,26 @@ export class BacktestEngine {
           }
 
           if (!position) {
-            const fee = qty * executionPrice * feeRate;
-            capital -= fee;
-            positions.set(symbol, { symbol, quantity: -qty, entryPrice: executionPrice, entryTs: candle.openTime });
+            const notional = capital * (options.riskPerTradePct / 100) * Math.max(0.2, item.signal.strength);
+            const qty = notional / Math.max(1e-9, markPrice);
+            const openCosts = computeExecutionCosts({
+              notionalUsd: notional,
+              turnover: 1,
+              feeBps: options.feeBps,
+              slippageBps: options.slippageBps,
+              turnoverPenaltyBps,
+              volatility,
+              macdHistNorm: macdHist,
+            });
+            capital -= openCosts.totalCost;
+            positions.set(symbol, {
+              symbol,
+              quantity: -qty,
+              entryPrice: markPrice,
+              entryTs: candle.openTime,
+              notionalUsd: notional,
+              entryCostUsd: openCosts.totalCost,
+            });
           }
         }
       }
@@ -179,17 +246,32 @@ export class BacktestEngine {
     }
 
     if (positions.size > 0) {
-      const feeRate = options.feeBps / 10_000;
       for (const [sym, position] of positions) {
         const last = lastCandles.get(sym);
         const exitPrice = last?.close ?? lastPrices.get(sym) ?? position.entryPrice;
         const exitTs = last?.closeTime ?? position.entryTs;
+        const featureWindow = featureWindows.get(sym) ?? [];
+        const slippageFeatures = featureWindow.length >= featureLookback
+          ? extractFeatures(featureWindow, [], { position: 0, positionAge: 0, lastTurnoverAge: 0 })
+          : null;
+        const volatility = slippageFeatures ? slippageFeatures[1] : 0;
+        const macdHist = slippageFeatures ? slippageFeatures[5] : 0;
+        const turnoverPenaltyBps = options.turnoverPenaltyBps ?? 0;
         if (position.quantity > 0) {
           const qty = position.quantity;
-          const pnl = (exitPrice - position.entryPrice) * qty;
-          const fee = qty * exitPrice * feeRate;
-          const net = pnl - fee;
-          capital += net;
+          const closeCosts = computeExecutionCosts({
+            notionalUsd: position.notionalUsd,
+            turnover: 1,
+            feeBps: options.feeBps,
+            slippageBps: options.slippageBps,
+            turnoverPenaltyBps,
+            volatility,
+            macdHistNorm: macdHist,
+          });
+          capital -= closeCosts.totalCost;
+          const gross = (exitPrice - position.entryPrice) * qty;
+          capital += gross;
+          const net = gross - position.entryCostUsd - closeCosts.totalCost;
           returns.push(net / Math.max(1, capital));
           trades.push({
             symbol: sym,
@@ -203,10 +285,19 @@ export class BacktestEngine {
           });
         } else {
           const qty = Math.abs(position.quantity);
-          const pnl = (position.entryPrice - exitPrice) * qty;
-          const fee = qty * exitPrice * feeRate;
-          const net = pnl - fee;
-          capital += net;
+          const closeCosts = computeExecutionCosts({
+            notionalUsd: position.notionalUsd,
+            turnover: 1,
+            feeBps: options.feeBps,
+            slippageBps: options.slippageBps,
+            turnoverPenaltyBps,
+            volatility,
+            macdHistNorm: macdHist,
+          });
+          capital -= closeCosts.totalCost;
+          const gross = (position.entryPrice - exitPrice) * qty;
+          capital += gross;
+          const net = gross - position.entryCostUsd - closeCosts.totalCost;
           returns.push(net / Math.max(1, capital));
           trades.push({
             symbol: sym,
@@ -244,13 +335,6 @@ export class BacktestEngine {
     };
   }
 }
-
-const applyExecutionPrice = (mark: number, action: Signal['action'], slippageBps: number): number => {
-  const slip = slippageBps / 10_000;
-  if (action === 'buy') return mark * (1 + slip);
-  if (action === 'sell') return mark * (1 - slip);
-  return mark;
-};
 
 const computeSharpe = (returns: number[]): number => {
   if (returns.length < 2) return 0;

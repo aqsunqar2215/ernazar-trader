@@ -1,4 +1,5 @@
 import type { Candle } from '../core/types.js';
+import { computeExecutionCosts } from '../execution/execution-model.js';
 import { featureLookback, extractFeatures } from './features.js';
 import {
   actionIndexToLabel,
@@ -98,7 +99,13 @@ interface EpisodeState {
   position: -1 | 0 | 1;
   entryPrice: number;
   entryTs: number;
-  pendingAction: Array<{ executeAt: number; action: -1 | 0 | 1 }>;
+  entryBar: number;
+  pendingAction: Array<{
+    executeAt: number;
+    action: -1 | 0 | 1;
+    actionIdx: number;
+    features: number[];
+  }>;
 }
 
 interface SimulatorOptions {
@@ -421,13 +428,20 @@ export class RlTrainer {
         position: 0,
         entryPrice: 0,
         entryTs: 0,
+        entryBar: startIdx,
         pendingAction: [],
       };
       let lastPositionChangeBar = startIdx;
 
       for (let i = startIdx; i < endIdx; i += 1) {
         const window = series.slice(i - (featureLookback - 1), i + 1);
-        const features = extractFeatures(window);
+        const decisionPositionAge = state.position === 0 ? 0 : Math.max(0, i - state.entryBar);
+        const decisionLastTurnoverAge = Math.max(0, i - lastPositionChangeBar);
+        const features = extractFeatures(window, [], {
+          position: state.position,
+          positionAge: decisionPositionAge,
+          lastTurnoverAge: decisionLastTurnoverAge,
+        });
         const actionIdx = chooseAction(features, model, epsilon);
         const action = actionIndexToValue(actionIdx);
         if (action === 1) buyDecisions += 1;
@@ -436,28 +450,40 @@ export class RlTrainer {
         state.pendingAction.push({
           executeAt: i + Math.max(0, cfg.latencyBars),
           action,
+          actionIdx,
+          features,
         });
 
         let costs = 0;
         let turnoverApplied = 0;
+        let executedDecision: { actionIdx: number; action: -1 | 0 | 1; features: number[] } | null = null;
         while (state.pendingAction.length > 0 && state.pendingAction[0].executeAt <= i) {
           const update = state.pendingAction.shift();
           if (!update) break;
+          executedDecision = { actionIdx: update.actionIdx, action: update.action, features: update.features };
           const turnover = Math.abs(update.action - state.position);
           if (turnover <= 0) continue;
           turnoverApplied += turnover;
           const notional = equity * (cfg.riskPerTradePct / 100) * Math.max(0.2, Math.abs(update.action));
-          const dynamicSlippageBps = cfg.slippageBps + Math.max(0, features[1]) * 4;
-          const feeCost = notional * ((cfg.feeBps + dynamicSlippageBps) / 10_000) * turnover;
-          const turnoverPenalty = notional * (cfg.turnoverPenaltyBps / 10_000) * turnover;
-          costs += feeCost + turnoverPenalty;
+          const execCosts = computeExecutionCosts({
+            notionalUsd: notional,
+            turnover,
+            feeBps: cfg.feeBps,
+            slippageBps: cfg.slippageBps,
+            turnoverPenaltyBps: cfg.turnoverPenaltyBps,
+            volatility: features[1],
+            macdHistNorm: features[5],
+          });
+          costs += execCosts.totalCost;
           state.position = update.action;
           if (state.position !== 0) {
             state.entryPrice = series[i].close;
             state.entryTs = series[i].openTime;
+            state.entryBar = i;
           } else {
             state.entryPrice = 0;
             state.entryTs = 0;
+            state.entryBar = i;
           }
         }
 
@@ -480,16 +506,22 @@ export class RlTrainer {
         const pnlReturn = pnl / normalizationBase;
         const normalizedCosts = costs / normalizationBase;
         const shapedPnl = shapePnlReward(pnlReturn);
+        const holdPenalty = executedDecision && executedDecision.action === 0 ? cfg.rewardHoldPenalty : 0;
+        const actionBonus = executedDecision && executedDecision.action !== 0 ? cfg.rewardActionBonus : 0;
         // TD reward now includes the same cost/drawdown signals that the evaluator uses.
         // This aligns what the agent optimises with how it is scored.
         // - `pnlReturn`: normalised position PnL (replaces raw `position * priceRet`)
         // - `normalizedCosts * rewardCostWeight`: penalises each trade proportionally
         // - `ddPenalty`: discourages policies that cause large drawdowns
         // - `frequencyPenalty`: existing penalty for flipping too fast
+        // - `holdPenalty`: discourages staying idle without signal
+        // - `actionBonus`: keeps the agent from over-prioritising hold
         const reward = pnlReturn
           - normalizedCosts * cfg.rewardCostWeight
           - ddPenalty
-          - frequencyPenalty;
+          - frequencyPenalty
+          - holdPenalty
+          + actionBonus;
         // `shapedPnl` is the bounded economic PnL metric (via pnlRewardBands).
         // Used only for telemetry/logging, not for TD updates.
         totalReward += reward;
@@ -501,23 +533,46 @@ export class RlTrainer {
 
         // Collect next-state features regardless of episode end.
         const nextWindow = series.slice(i - (featureLookback - 2), i + 2);
-        const nextFeatures = extractFeatures(nextWindow);
+        const postPositionAge = state.position === 0 ? 0 : Math.max(0, i - state.entryBar);
+        const postTurnoverAge = Math.max(0, i - lastPositionChangeBar);
+        const nextFeatures = extractFeatures(nextWindow, [], {
+          position: state.position,
+          positionAge: state.position === 0 ? 0 : postPositionAge + 1,
+          lastTurnoverAge: postTurnoverAge + 1,
+        });
         const isDone = i + 1 >= endIdx;
 
         // --- Push to replay buffer (circular) ---
-        this.replayBuffer.push({ features, actionIdx, reward, nextFeatures, done: isDone });
-        if (this.replayBuffer.length > REPLAY_BUFFER_SIZE) {
-          this.replayBuffer.shift();
-        }
+        if (executedDecision) {
+          this.replayBuffer.push({
+            features: executedDecision.features,
+            actionIdx: executedDecision.actionIdx,
+            reward,
+            nextFeatures,
+            done: isDone,
+          });
+          if (this.replayBuffer.length > REPLAY_BUFFER_SIZE) {
+            this.replayBuffer.shift();
+          }
 
-        // --- Online TD update on current transition ---
-        this.applyTdUpdate(model, features, actionIdx, reward, nextFeatures, isDone, cfg, learningRate);
+          // --- Online TD update on executed transition ---
+          this.applyTdUpdate(
+            model,
+            executedDecision.features,
+            executedDecision.actionIdx,
+            reward,
+            nextFeatures,
+            isDone,
+            cfg,
+            learningRate,
+          );
 
-        // --- Mini-batch replay update (every step once buffer has enough entries) ---
-        if (this.replayBuffer.length >= REPLAY_BATCH_SIZE) {
-          const batch = sampleBatch(this.replayBuffer, REPLAY_BATCH_SIZE);
-          for (const entry of batch) {
-            this.applyTdUpdate(model, entry.features, entry.actionIdx, entry.reward, entry.nextFeatures, entry.done, cfg, learningRate * 0.5);
+          // --- Mini-batch replay update (every step once buffer has enough entries) ---
+          if (this.replayBuffer.length >= REPLAY_BATCH_SIZE) {
+            const batch = sampleBatch(this.replayBuffer, REPLAY_BATCH_SIZE);
+            for (const entry of batch) {
+              this.applyTdUpdate(model, entry.features, entry.actionIdx, entry.reward, entry.nextFeatures, entry.done, cfg, learningRate * 0.5);
+            }
           }
         }
       }
@@ -591,6 +646,7 @@ export const simulatePolicy = (
       position: 0,
       entryPrice: 0,
       entryTs: 0,
+      entryBar: 0,
       pendingAction: [],
     });
   }
@@ -611,37 +667,62 @@ export const simulatePolicy = (
     const state = states.get(symbol);
     if (!state || series.length < featureLookback + 2) continue;
     let equity = symbolCapital.get(symbol) ?? cfg.initialCapitalUsd / symbols.length;
+    let lastPositionChangeBar = featureLookback - 1;
 
     for (let i = featureLookback - 1; i < series.length - 1; i += 1) {
       const window = series.slice(i - (featureLookback - 1), i + 1);
-      const features = extractFeatures(window);
+      const positionAge = state.position === 0 ? 0 : Math.max(0, i - state.entryBar);
+      const lastTurnoverAge = Math.max(0, i - lastPositionChangeBar);
+      const features = extractFeatures(window, [], {
+        position: state.position,
+        positionAge,
+        lastTurnoverAge,
+      });
       const actionIdx = greedyActionIndex(features, model);
       const action = actionIndexToValue(actionIdx);
-      state.pendingAction.push({ executeAt: i + Math.max(1, cfg.latencyBars), action });
+      state.pendingAction.push({
+        executeAt: i + Math.max(1, cfg.latencyBars),
+        action,
+        actionIdx,
+        features,
+      });
 
       let costs = 0;
+      let turnoverApplied = 0;
       while (state.pendingAction.length > 0 && state.pendingAction[0].executeAt <= i) {
         const update = state.pendingAction.shift();
         if (!update) break;
         const turnover = Math.abs(update.action - state.position);
         if (turnover <= 0) continue;
+        turnoverApplied += turnover;
         if (state.position !== 0) {
           const closed = closeTrade(state, series[i], equity * (cfg.riskPerTradePct / 100));
           if (closed) trades.push(closed);
         }
         const notional = equity * (cfg.riskPerTradePct / 100) * Math.max(0.2, Math.abs(update.action));
-        const dynamicSlippageBps = cfg.slippageBps + Math.max(0, features[1]) * 8 + Math.max(0, features[5]) * 2;
-        const feeCost = notional * ((cfg.feeBps + dynamicSlippageBps) / 10_000) * turnover;
-        const turnoverPenalty = notional * (cfg.turnoverPenaltyBps / 10_000) * turnover;
-        costs += feeCost + turnoverPenalty;
+        const execCosts = computeExecutionCosts({
+          notionalUsd: notional,
+          turnover,
+          feeBps: cfg.feeBps,
+          slippageBps: cfg.slippageBps,
+          turnoverPenaltyBps: cfg.turnoverPenaltyBps,
+          volatility: features[1],
+          macdHistNorm: features[5],
+        });
+        costs += execCosts.totalCost;
         state.position = update.action;
         if (state.position !== 0) {
           state.entryPrice = series[i].close;
           state.entryTs = series[i].openTime;
+          state.entryBar = i;
         } else {
           state.entryPrice = 0;
           state.entryTs = 0;
+          state.entryBar = i;
         }
+      }
+      if (turnoverApplied > 0) {
+        lastPositionChangeBar = i;
       }
 
       const next = series[i + 1];

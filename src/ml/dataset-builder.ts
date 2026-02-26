@@ -20,7 +20,11 @@ export class DatasetBuilder {
         const window = series.slice(i - (featureLookback - 1), i + 1);
         const current = series[i];
         const future = series[i + horizonBars];
-        const features = extractFeatures(window, symbolFills);
+        const features = extractFeatures(window, symbolFills, {
+          position: 0,
+          positionAge: 0,
+          lastTurnoverAge: 0,
+        });
         const ret = (future.close - current.close) / current.close;
         const label = ret > 0.001 ? 1 : ret < -0.001 ? -1 : 0;
         samples.push({

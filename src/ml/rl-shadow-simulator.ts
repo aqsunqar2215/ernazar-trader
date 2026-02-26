@@ -1,5 +1,6 @@
 import type { AppConfig } from '../core/config.js';
 import type { Candle } from '../core/types.js';
+import { computeExecutionCosts } from '../execution/execution-model.js';
 import { Logger } from '../state/logger.js';
 import { extractFeatures, featureLookback } from './features.js';
 import { actionIndexToValue, greedyActionIndex, type RlLinearQPolicyModel } from './rl-policy.js';
@@ -9,6 +10,8 @@ interface ShadowSymbolState {
   symbol: string;
   step: number;
   position: -1 | 0 | 1;
+  positionEntryStep: number;
+  lastTurnoverStep: number;
   entryPrice: number;
   entryTs: number;
   lastClose?: number;
@@ -89,7 +92,13 @@ export class RlShadowSimulator {
     if (state.candles.length < featureLookback) return;
 
     const window = state.candles.slice(state.candles.length - featureLookback);
-    const features = extractFeatures(window);
+    const positionAge = state.position === 0 ? 0 : Math.max(0, state.step - state.positionEntryStep);
+    const lastTurnoverAge = Math.max(0, state.step - state.lastTurnoverStep);
+    const features = extractFeatures(window, [], {
+      position: state.position,
+      positionAge,
+      lastTurnoverAge,
+    });
     const actionIndex = greedyActionIndex(features, model);
     const action = actionIndexToValue(actionIndex);
     state.pending.push({
@@ -133,6 +142,20 @@ export class RlShadowSimulator {
 
   private applyPending(state: ShadowSymbolState, candle: Candle): void {
     const equity = this.capitalBySymbol.get(candle.symbol) ?? this.initialCapitalUsd / Math.max(1, this.config.market.symbols.length);
+    const featureWindow = state.candles.length >= featureLookback
+      ? state.candles.slice(state.candles.length - featureLookback)
+      : null;
+    const positionAge = state.position === 0 ? 0 : Math.max(0, state.step - state.positionEntryStep);
+    const lastTurnoverAge = Math.max(0, state.step - state.lastTurnoverStep);
+    const slippageFeatures = featureWindow
+      ? extractFeatures(featureWindow, [], {
+        position: state.position,
+        positionAge,
+        lastTurnoverAge,
+      })
+      : null;
+    const volatility = slippageFeatures ? slippageFeatures[1] : 0;
+    const macdHist = slippageFeatures ? slippageFeatures[5] : 0;
     while (state.pending.length > 0 && state.pending[0].executeAtStep <= state.step) {
       const update = state.pending.shift();
       if (!update) break;
@@ -145,10 +168,16 @@ export class RlShadowSimulator {
       }
 
       const notional = equity * (this.config.risk.maxRiskPerTradePct / 100) * Math.max(0.2, Math.abs(update.action));
-      const slipBps = this.config.execution.slippageBps;
-      const feeCost = notional * ((this.config.execution.feeBps + slipBps) / 10_000) * turnover;
-      const turnoverPenalty = notional * (this.config.rl.turnoverPenaltyBps / 10_000) * turnover;
-      const costs = feeCost + turnoverPenalty;
+      const execCosts = computeExecutionCosts({
+        notionalUsd: notional,
+        turnover,
+        feeBps: this.config.execution.feeBps,
+        slippageBps: this.config.execution.slippageBps,
+        turnoverPenaltyBps: this.config.rl.turnoverPenaltyBps,
+        volatility,
+        macdHistNorm: macdHist,
+      });
+      const costs = execCosts.totalCost;
       this.totalCostsUsd += costs;
       this.capitalBySymbol.set(candle.symbol, (this.capitalBySymbol.get(candle.symbol) ?? equity) - costs);
 
@@ -156,10 +185,13 @@ export class RlShadowSimulator {
       if (state.position !== 0) {
         state.entryPrice = candle.close;
         state.entryTs = candle.openTime;
+        state.positionEntryStep = state.step;
       } else {
         state.entryPrice = 0;
         state.entryTs = 0;
+        state.positionEntryStep = state.step;
       }
+      state.lastTurnoverStep = state.step;
     }
   }
 
@@ -190,6 +222,8 @@ export class RlShadowSimulator {
       symbol,
       step: 0,
       position: 0,
+      positionEntryStep: 0,
+      lastTurnoverStep: 0,
       entryPrice: 0,
       entryTs: 0,
       candles: [],

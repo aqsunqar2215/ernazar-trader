@@ -23,12 +23,28 @@ export const FEATURE_NAMES = [
   'cross_trend_mom3',   // retAutocorr * mom_3: positive when trending, negative when mean-reverting
   'cross_trend_rsi',    // retAutocorr * (rsi - 0.5): scales RSI signal conditionally
   'cross_vol_bbpos',    // realizedVol * bb_pos: scales breakout signal by volatility
+  // Position context (MDP observability)
+  'pos',
+  'pos_age',
+  'last_turnover_age',
 ] as const;
 
 // Increased from 36 → 40 to support 34-bar EMA and autocorrelation lag window
 export const featureLookback = 40;
 
-export const extractFeatures = (window: Candle[], fills: Fill[] = []): number[] => {
+interface PositionFeatureState {
+  position: number;
+  positionAge: number;
+  lastTurnoverAge: number;
+}
+
+const POSITION_AGE_NORMALIZER = 100;
+
+export const extractFeatures = (
+  window: Candle[],
+  fills: Fill[] = [],
+  positionState: PositionFeatureState = { position: 0, positionAge: 0, lastTurnoverAge: 0 },
+): number[] => {
   const closes = window.map(candle => candle.close);
   const returns = closes.slice(1).map((value, index) => (value - closes[index]) / closes[index]);
   const volume = window.map(candle => candle.volume);
@@ -56,6 +72,10 @@ export const extractFeatures = (window: Candle[], fills: Fill[] = []): number[] 
   const hurstP = hurstProxy(closes, 16);
   const bbSqueeze = Math.max(0, Math.min(1, 1 - bbWidth / Math.max(1e-9, realizedVol * 4)));
 
+  const pos = Math.max(-1, Math.min(1, positionState.position));
+  const posAge = Math.min(1, Math.max(0, positionState.positionAge) / POSITION_AGE_NORMALIZER);
+  const turnoverAge = Math.min(1, Math.max(0, positionState.lastTurnoverAge) / POSITION_AGE_NORMALIZER);
+
   return [
     meanReturn,
     realizedVol,
@@ -79,6 +99,10 @@ export const extractFeatures = (window: Candle[], fills: Fill[] = []): number[] 
     retAutocorr * mom3,
     retAutocorr * ((rsi14 / 100) - 0.5),
     realizedVol * bbPos,
+
+    pos,
+    posAge,
+    turnoverAge,
   ];
 };
 

@@ -29,6 +29,7 @@ export class BacktestService {
       slippageBps: this.config.execution.slippageBps,
       latencyBars: 1,
       riskPerTradePct: this.config.risk.maxRiskPerTradePct,
+      turnoverPenaltyBps: this.config.rl.turnoverPenaltyBps,
     });
     const wf = this.walkForward.validate(candles, {
       initialCapitalUsd: this.config.execution.initialEquityUsd,
@@ -36,6 +37,7 @@ export class BacktestService {
       slippageBps: this.config.execution.slippageBps,
       latencyBars: 1,
       riskPerTradePct: this.config.risk.maxRiskPerTradePct,
+      turnoverPenaltyBps: this.config.rl.turnoverPenaltyBps,
     });
 
     const passed =

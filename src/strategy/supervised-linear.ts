@@ -29,7 +29,11 @@ export class SupervisedLinearStrategy implements Strategy {
     }
 
     const window = series.slice(series.length - featureLookback);
-    const features = extractFeatures(window);
+    const features = extractFeatures(window, [], {
+      position: 0,
+      positionAge: 0,
+      lastTurnoverAge: 0,
+    });
     const probLong = this.predictProbability(features);
 
     let action: Signal['action'] = 'hold';

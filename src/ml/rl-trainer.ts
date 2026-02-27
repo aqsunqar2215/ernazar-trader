@@ -392,7 +392,7 @@ export class RlTrainer {
     trainOptions: Partial<RlTrainerOptions> = {},
     purgeBars: number = 100,
   ): RlWalkForwardSummary {
-    return this.walkForwardRetrainWarmStart(candles, model, options, folds, trainOptions, purgeBars);
+    return this.walkForwardFixed(candles, model, options, folds, purgeBars);
   }
 
   private emptyWalkForwardSummary(): RlWalkForwardSummary {
@@ -561,10 +561,16 @@ export class RlTrainer {
         // - `normalizedCosts * rewardCostWeight`: penalises each trade proportionally
         // - `ddPenalty`: discourages policies that cause large drawdowns
         // - `frequencyPenalty`: existing penalty for flipping too fast
+        // - `holdPenalty`: discourages staying flat when the policy keeps returning hold
+        // - `actionBonus`: small reward for executed trades to avoid degenerate hold-only policies
+        const holdPenalty = executedDecision && executedDecision.action === 0 ? cfg.rewardHoldPenalty : 0;
+        const actionBonus = executedDecision && turnoverApplied > 0 ? cfg.rewardActionBonus : 0;
         const reward = pnlReturn
           - normalizedCosts * cfg.rewardCostWeight
           - ddPenalty
-          - frequencyPenalty;
+          - frequencyPenalty
+          - holdPenalty
+          + actionBonus;
         // `shapedPnl` is the bounded economic PnL metric (via pnlRewardBands).
         // Used only for telemetry/logging, not for TD updates.
         totalReward += reward;
@@ -857,13 +863,15 @@ const totalEquity = (symbolCapital: Map<string, number>): number => {
   return total;
 };
 
+const SHARPE_ANNUALIZATION = Math.sqrt(365 * 24 * 60);
+
 const computeSharpe = (returns: number[]): number => {
   if (returns.length < 2) return 0;
   const mean = avg(returns);
   const variance = returns.reduce((sum, value) => sum + (value - mean) ** 2, 0) / (returns.length - 1);
   const std = Math.sqrt(Math.max(variance, 0));
   if (std === 0) return 0;
-  return (mean / std) * Math.sqrt(252);
+  return (mean / std) * SHARPE_ANNUALIZATION;
 };
 
 const computeSortino = (returns: number[]): number => {
@@ -874,7 +882,7 @@ const computeSortino = (returns: number[]): number => {
   const downsideVariance = downside.reduce((sum, value) => sum + value ** 2, 0) / downside.length;
   const downsideDev = Math.sqrt(Math.max(0, downsideVariance));
   if (downsideDev === 0) return 0;
-  return (mean / downsideDev) * Math.sqrt(252);
+  return (mean / downsideDev) * SHARPE_ANNUALIZATION;
 };
 
 const avg = (values: number[]): number => {

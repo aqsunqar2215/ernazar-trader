@@ -11,6 +11,7 @@ import { TradingEngine } from './trading-engine.js';
 import { BacktestService } from '../backtest/backtest-service.js';
 import { MlService } from '../ml/ml-service.js';
 import { RlShadowSimulator } from '../ml/rl-shadow-simulator.js';
+import { StrategyRouter } from '../strategy/strategy-router.js';
 
 export class AppRuntime {
   private readonly logger = new Logger('hydra');
@@ -35,9 +36,17 @@ export class AppRuntime {
     this.db,
     this.logger,
   );
-  private readonly tradingEngine = new TradingEngine(this.db, this.feed, this.orderManager, this.logger, config);
-  private readonly backtestService = new BacktestService(this.db, this.logger, config);
   private readonly mlService = new MlService(this.db, this.logger, config);
+  private readonly strategyRouter = new StrategyRouter(this.db, this.mlService, this.logger, config);
+  private readonly tradingEngine = new TradingEngine(
+    this.db,
+    this.feed,
+    this.orderManager,
+    this.strategyRouter,
+    this.logger,
+    config,
+  );
+  private readonly backtestService = new BacktestService(this.db, this.logger, config);
   private readonly rlShadow = new RlShadowSimulator(this.logger, config, () => this.mlService.getChampionRlModel());
   private readonly api = new ApiServer(this.db, this.cache, this.feed, {
       getTradingStatus: () => this.tradingEngine.getRuntimeStatus(),

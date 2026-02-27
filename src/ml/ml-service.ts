@@ -194,7 +194,9 @@ export class MlService {
     const desiredLimit = Math.min(400_000, pretrainBarsTarget + unseenBarsTarget + 8_000);
     const candlesLimit = Math.max(2_000, Math.min(requestedLimit, desiredLimit));
     const fillsLimit = Math.max(500, Math.floor(this.config.ml.retrainFillsLimit));
-    const candles = this.db.getRecentCandles(candlesLimit).filter(item => item.timeframe === '1m');
+    const candles = this.db
+      .getRecentCandles(candlesLimit)
+      .filter(item => item.timeframe === '1m' && item.source !== 'gap_fill');
     const fills = this.db.getFills(fillsLimit);
     const result: Record<string, unknown> = {
       mode: 'offline_batch',
@@ -575,7 +577,7 @@ export class MlService {
         minEpisodes: Math.min(this.config.rl.pretrainEpisodes, this.config.rl.pretrainMinEpisodes),
       };
       pretrain = this.rlTrainer.train(pretrainCandles, pretrainOptions, trainingSeedPolicy);
-      pretrainWf = this.rlTrainer.walkForward(
+      pretrainWf = this.rlTrainer.walkForwardRetrainWarmStart(
         pretrainCandles,
         pretrain.model,
         simOptions,
@@ -599,12 +601,11 @@ export class MlService {
     }
 
     const rlOutput = this.rlTrainer.train(split.train, rlTrainOptions, trainingSeedPolicy);
-    const wf = this.rlTrainer.walkForward(
+    const wf = this.rlTrainer.walkForwardFixed(
       split.train,
       rlOutput.model,
       simOptions,
       Math.max(1, Math.floor(this.config.ml.rlWfFolds)),
-      rlTrainOptions,
       this.config.ml.purgeBars,
     );
     const holdout = this.rlTrainer.evaluate(split.holdout, rlOutput.model, simOptions);
@@ -993,7 +994,7 @@ export class MlService {
     minHoldoutCandles: number,
   ): TemporalSplit | undefined {
     const sorted = [...candles]
-      .filter(item => item.timeframe === '1m')
+      .filter(item => item.timeframe === '1m' && item.source !== 'gap_fill')
       .sort((a, b) => a.openTime - b.openTime);
     if (sorted.length < minTrainCandles + minHoldoutCandles + 4) return undefined;
 
@@ -1028,7 +1029,7 @@ export class MlService {
     minHoldoutCandles: number,
   ): TemporalSplit | undefined {
     const sorted = [...candles]
-      .filter(item => item.timeframe === '1m')
+      .filter(item => item.timeframe === '1m' && item.source !== 'gap_fill')
       .sort((a, b) => a.openTime - b.openTime);
     if (sorted.length < minTrainCandles + minHoldoutCandles + 4) return undefined;
 
@@ -1228,7 +1229,7 @@ export class MlService {
     if (months <= 0) return [];
     if (candles.length < this.config.ml.pretrainMinCandles) return [];
     const sorted = [...candles]
-      .filter(item => item.timeframe === '1m')
+      .filter(item => item.timeframe === '1m' && item.source !== 'gap_fill')
       .sort((a, b) => a.openTime - b.openTime);
     if (sorted.length < this.config.ml.pretrainMinCandles) return [];
     const rangeMs = months * 30 * 24 * 60 * 60 * 1_000;
@@ -1243,7 +1244,7 @@ export class MlService {
     if (!this.config.rl.hardNegativeReplayEnabled) return [];
     if (this.rlHardNegativeWindows.length === 0) return [];
     const timeframeCandles = candles
-      .filter(item => item.timeframe === '1m')
+      .filter(item => item.timeframe === '1m' && item.source !== 'gap_fill')
       .sort((a, b) => a.openTime - b.openTime);
     if (timeframeCandles.length === 0) return [];
     const contextMs = Math.max(0, Math.floor(this.config.rl.hardNegativeReplayWindowBars)) * 60_000;

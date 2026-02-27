@@ -7,7 +7,7 @@ import { MarketDataFeed } from '../market/market-feed.js';
 import { OrderManager } from '../execution/order-manager.js';
 import { RiskEngine } from '../risk/risk-engine.js';
 import { KillSwitch } from '../risk/kill-switch.js';
-import { MomentumMeanReversionStrategy } from '../strategy/momentum-mean-reversion.js';
+import type { Strategy } from '../strategy/strategy.js';
 import { RolloutPolicy } from './rollout-policy.js';
 
 interface PaperMetrics {
@@ -22,11 +22,12 @@ interface PaperMetrics {
 
 export class TradingEngine {
   private readonly logger: Logger;
-  private readonly strategy = new MomentumMeanReversionStrategy();
+  private readonly strategy: Strategy;
   private readonly risk: RiskEngine;
   private readonly killSwitch = new KillSwitch();
   private readonly rollout: RolloutPolicy;
   private readonly orderTimes: number[] = [];
+  private candleQueue: Promise<void> = Promise.resolve();
   private started = false;
   private cashUsd: number;
   private realizedPnlUsd = 0;
@@ -54,10 +55,12 @@ export class TradingEngine {
     private readonly db: StateDb,
     private readonly feed: MarketDataFeed,
     private readonly orderManager: OrderManager,
+    strategy: Strategy,
     logger: Logger,
     private readonly config: AppConfig,
   ) {
     this.logger = logger.child('trading-engine');
+    this.strategy = strategy;
     this.cashUsd = config.execution.initialEquityUsd;
     this.peakEquityUsd = config.execution.initialEquityUsd;
     this.risk = new RiskEngine({
@@ -79,7 +82,11 @@ export class TradingEngine {
     if (this.started) return;
     await this.orderManager.reconcile();
     this.feed.on('candle', (candle: Candle) => {
-      void this.onCandle(candle);
+      this.candleQueue = this.candleQueue
+        .catch(error => {
+          this.logger.error('onCandle queue error', { error: String(error) });
+        })
+        .then(() => this.onCandle(candle));
     });
     this.started = true;
     this.logger.info('trading engine started');
@@ -247,7 +254,7 @@ export class TradingEngine {
         avgFillPrice: result.avgFillPrice ?? 0,
       });
 
-      if (result.status !== 'accepted') {
+      if (result.status === 'rejected' || result.status === 'canceled' || result.status === 'pending') {
         this.raiseAlert('warning', 'order_failure', `order rejected: ${result.reason ?? 'unknown'}`, {
           symbol: orderRequest.symbol,
           side: orderRequest.side,
@@ -257,17 +264,26 @@ export class TradingEngine {
         return;
       }
 
+      const filledQuantity = result.filledQuantity ?? 0;
+      if (filledQuantity <= 0) {
+        this.snapshotEquity(candle.closeTime);
+        return;
+      }
+
+      const feesUsd = result.feesUsd ?? 0;
+      const realizedPnlUsd = result.realizedPnlUsd ?? 0;
+      const netTradePnlUsd = realizedPnlUsd - feesUsd;
       this.orderTimes.push(Date.now());
-      this.consumeFillCashflow(orderRequest.side, result.avgFillPrice ?? candle.close, result.filledQuantity ?? qty, result.feesUsd ?? 0);
-      this.realizedPnlUsd += result.realizedPnlUsd ?? 0;
-      this.paperMetrics.netPnlUsd += (result.realizedPnlUsd ?? 0) - (result.feesUsd ?? 0);
-      if ((result.realizedPnlUsd ?? 0) > 0) {
+      this.consumeFillCashflow(orderRequest.side, result.avgFillPrice ?? candle.close, filledQuantity, feesUsd);
+      this.realizedPnlUsd += netTradePnlUsd;
+      this.paperMetrics.netPnlUsd += netTradePnlUsd;
+      if (netTradePnlUsd > 0) {
         this.paperMetrics.wins += 1;
-        this.paperMetrics.grossProfitUsd += result.realizedPnlUsd ?? 0;
+        this.paperMetrics.grossProfitUsd += netTradePnlUsd;
         this.recentLossStreak = 0;
-      } else if ((result.realizedPnlUsd ?? 0) < 0) {
+      } else if (netTradePnlUsd < 0) {
         this.paperMetrics.losses += 1;
-        this.paperMetrics.grossLossUsd += Math.abs(result.realizedPnlUsd ?? 0);
+        this.paperMetrics.grossLossUsd += Math.abs(netTradePnlUsd);
         this.recentLossStreak += 1;
       }
       this.paperMetrics.trades += 1;

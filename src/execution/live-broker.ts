@@ -15,7 +15,11 @@ export class LiveBroker implements Broker {
   async placeOrder(request: BrokerOrderRequest): Promise<BrokerOrderResult> {
     const notional = request.quantity * request.markPrice;
     if (!this.options.enabled) {
-      return { orderId: `live-disabled-${request.clientOrderId}`, status: 'rejected', reason: 'live orders disabled' };
+      return {
+        orderId: `live-disabled-${request.clientOrderId}`,
+        status: 'rejected',
+        reason: 'live orders disabled',
+      };
     }
     if (notional > this.options.tinyLiveMaxNotionalUsd) {
       return {
@@ -25,7 +29,7 @@ export class LiveBroker implements Broker {
       };
     }
 
-    this.logger.warn('live broker placeholder accepted order (wire exchange adapter)', {
+    this.logger.warn('live broker placeholder rejected order (wire exchange adapter)', {
       mode: this.options.mode,
       symbol: request.symbol,
       side: request.side,
@@ -33,10 +37,9 @@ export class LiveBroker implements Broker {
     });
     return {
       orderId: `live-${request.clientOrderId}`,
-      status: 'accepted',
+      status: 'rejected',
+      reason: 'live broker not wired to exchange adapter',
       acceptedAt: Date.now(),
-      filledQuantity: 0,
-      avgFillPrice: 0,
     };
   }
 

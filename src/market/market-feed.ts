@@ -13,6 +13,14 @@ interface FeedOptions {
   timeframes: Timeframe[];
 }
 
+interface MockRegime {
+  drift: number;
+  vol: number;
+  meanRevert: number;
+  cycleAmp: number;
+  remaining: number;
+}
+
 interface BinanceKlineMessage {
   data: {
     s: string;
@@ -51,6 +59,9 @@ export class MarketDataFeed extends EventEmitter {
   private readonly lastPrice = new Map<TradingSymbol, number>();
   private lastEventTimestamp: number = 0;
   private readonly logger: Logger;
+  private readonly mockRegimes = new Map<TradingSymbol, MockRegime>();
+  private readonly mockVol = new Map<TradingSymbol, number>();
+  private readonly mockPrevReturn = new Map<TradingSymbol, number>();
 
   constructor(
     private readonly db: StateDb,
@@ -167,6 +178,7 @@ export class MarketDataFeed extends EventEmitter {
   }
 
   private mockCyclePhase = new Map<TradingSymbol, number>();
+  private mockRegimeStep = new Map<TradingSymbol, number>();
 
   private makeMockCandle(
     symbol: TradingSymbol,
@@ -174,24 +186,32 @@ export class MarketDataFeed extends EventEmitter {
     price: number,
     timeframe: Timeframe,
   ): Candle {
-    // 60-bar sine wave (60 minutes)
     let phase = this.mockCyclePhase.get(symbol) ?? 0;
-    phase += (2 * Math.PI) / 60;
+    phase += (2 * Math.PI) / 90;
     this.mockCyclePhase.set(symbol, phase);
 
-    // Very strong signal: 100 bps per bar at peak
-    const cycleDrift = Math.cos(phase) * 0.0100;
+    const regime = this.nextMockRegime(symbol, price);
+    const prevVol = this.mockVol.get(symbol) ?? regime.vol;
+    const vol = Math.max(0.00005, prevVol * 0.85 + regime.vol * 0.15 + randn() * regime.vol * 0.05);
+    this.mockVol.set(symbol, vol);
 
-    // Zero noise
-    const deltaPct = cycleDrift;
+    const prevRet = this.mockPrevReturn.get(symbol) ?? 0;
+    const cycle = Math.cos(phase) * regime.cycleAmp;
+    let ret = regime.drift + cycle + randn() * vol - regime.meanRevert * prevRet;
+    if (Math.random() < 0.012) {
+      ret += randn() * vol * 5.5;
+    }
+    this.mockPrevReturn.set(symbol, ret);
 
-    const close = Math.max(price * 0.5, price * (1 + deltaPct));
-    const wick = Math.abs(deltaPct) * price * 0.8 + price * 0.0003;
+    const close = Math.max(price * 0.2, price * (1 + ret));
+    const range = Math.abs(ret) + vol * randomBetween(0.4, 1.2);
+    const wick = Math.max(price * 0.0004, price * range);
     const high = Math.max(price, close) + wick;
     const low = Math.min(price, close) - wick;
     const step = timeframeToMs(timeframe);
 
-    const volBase = symbol.startsWith('ETH') ? 220 : 80;
+    const volBase = symbol.startsWith('ETH') ? 180 : 70;
+    const activityBoost = 1 + Math.min(3, Math.abs(ret) / 0.002 + vol / 0.002);
 
     return {
       symbol,
@@ -202,10 +222,40 @@ export class MarketDataFeed extends EventEmitter {
       high,
       low,
       close,
-      volume: Math.random() * volBase + volBase * 0.5,
-      trades: Math.floor(Math.random() * 140) + 10,
+      volume: (Math.random() * 0.6 + 0.4) * volBase * activityBoost,
+      trades: Math.max(5, Math.floor((Math.random() * 0.6 + 0.4) * 120 * activityBoost)),
       source: 'mock',
     };
+  }
+
+  private nextMockRegime(symbol: TradingSymbol, price: number): MockRegime {
+    const step = (this.mockRegimeStep.get(symbol) ?? 0) + 1;
+    this.mockRegimeStep.set(symbol, step);
+    const current = this.mockRegimes.get(symbol);
+    if (current && current.remaining > 0) {
+      current.remaining -= 1;
+      return current;
+    }
+
+    const baseVol = symbol.startsWith('ETH') ? 0.0018 : 0.0012;
+    const regime: MockRegime = {
+      drift: randomBetween(-0.0004, 0.0006),
+      vol: randomBetween(baseVol * 0.6, baseVol * 2.5),
+      meanRevert: randomBetween(0, 0.35),
+      cycleAmp: randomBetween(0.00025, 0.0012),
+      remaining: Math.floor(randomBetween(120, 520)),
+    };
+    this.mockRegimes.set(symbol, regime);
+    this.logger.debug?.('mock regime rotated', {
+      symbol,
+      drift: regime.drift,
+      vol: regime.vol,
+      meanRevert: regime.meanRevert,
+      cycleAmp: regime.cycleAmp,
+      remaining: regime.remaining,
+      anchor: price,
+    });
+    return regime;
   }
 
   private startBinance(): void {
@@ -305,3 +355,16 @@ export class MarketDataFeed extends EventEmitter {
     }
   }
 }
+
+const randn = (): number => {
+  let u = 0;
+  let v = 0;
+  while (u === 0) u = Math.random();
+  while (v === 0) v = Math.random();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+};
+
+const randomBetween = (min: number, max: number): number => {
+  if (max <= min) return min;
+  return min + Math.random() * (max - min);
+};

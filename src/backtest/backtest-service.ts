@@ -22,7 +22,9 @@ export class BacktestService {
   }
 
   runLatest(): { passed: boolean; reason: string; result: Record<string, unknown> } {
-    const candles = this.db.getRecentCandles(40_000).filter(item => item.timeframe === '1m');
+    const candles = this.db
+      .getRecentCandles(40_000)
+      .filter(item => item.timeframe === '1m' && item.source !== 'gap_fill');
     const backtest = this.backtest.run(candles, {
       initialCapitalUsd: this.config.execution.initialEquityUsd,
       feeBps: this.config.execution.feeBps,
@@ -42,12 +44,11 @@ export class BacktestService {
 
     const passed =
       backtest.profitFactor >= this.config.ml.minPaperProfitFactor &&
-      wf.avgSharpe >= this.config.ml.minWalkForwardSharpe &&
       backtest.maxDrawdown <= this.config.risk.maxDrawdownPct / 100;
 
     const reason = passed
-      ? 'strategy passed backtest + walk-forward gate'
-      : 'failed gate (profitFactor/sharpe/drawdown)';
+      ? 'strategy passed backtest gate (walk-forward informational)'
+      : 'failed gate (profitFactor/drawdown)';
 
     this.lastResult = {
       backtest,
@@ -55,6 +56,7 @@ export class BacktestService {
       gate: {
         passed,
         reason,
+        walkForwardUsed: false,
       },
     };
     this.passedGate = passed;

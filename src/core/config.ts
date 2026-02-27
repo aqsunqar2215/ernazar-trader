@@ -131,18 +131,18 @@ const paperOnly = (process.env.PAPER_ONLY || 'true').toLowerCase() !== 'false';
 const isMockPaperMode = marketMode === 'mock' && rolloutMode === 'paper' && paperOnly;
 
 const mockModeMlDefaults = {
-  minWalkForwardSharpe: -0.6,
+  minWalkForwardSharpe: -27.5,
   minWalkForwardProfitFactor: 1.0,
   minPaperProfitFactor: 1.0,
-  minPaperSharpe: 0.02,
+  minPaperSharpe: 0.9,
   minPaperTrades: 8,
 };
 
 const standardMlDefaults = {
-  minWalkForwardSharpe: -0.2,
+  minWalkForwardSharpe: -9.1,
   minWalkForwardProfitFactor: 1.03,
   minPaperProfitFactor: 1.02,
-  minPaperSharpe: 0.1,
+  minPaperSharpe: 4.5,
   minPaperTrades: 20,
 };
 
@@ -200,7 +200,7 @@ export const config: AppConfig = {
     unseenGateEnabled: (process.env.ML_UNSEEN_GATE_ENABLED || 'true').toLowerCase() !== 'false',
     unseenBars: parseNumber(process.env.ML_UNSEEN_BARS, 43_200),
     unseenMinProfitFactor: parseNumber(process.env.ML_UNSEEN_MIN_PROFIT_FACTOR, 1.0),
-    unseenMinSharpe: parseNumber(process.env.ML_UNSEEN_MIN_SHARPE, 0.02),
+    unseenMinSharpe: parseNumber(process.env.ML_UNSEEN_MIN_SHARPE, 0.9),
     unseenMinTrades: parseNumber(process.env.ML_UNSEEN_MIN_TRADES, 8),
     minRetrainIntervalMinutes: parseNumber(process.env.ML_MIN_RETRAIN_INTERVAL_MINUTES, 5),
     retrainIntervalHours: parseNumber(process.env.RETRAIN_INTERVAL_HOURS, 24),

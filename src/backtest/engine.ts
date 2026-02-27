@@ -336,13 +336,15 @@ export class BacktestEngine {
   }
 }
 
+const SHARPE_ANNUALIZATION = Math.sqrt(365 * 24 * 60);
+
 const computeSharpe = (returns: number[]): number => {
   if (returns.length < 2) return 0;
   const mean = returns.reduce((sum, value) => sum + value, 0) / returns.length;
   const variance = returns.reduce((sum, value) => sum + (value - mean) ** 2, 0) / (returns.length - 1);
   const std = Math.sqrt(Math.max(variance, 0));
   if (std === 0) return 0;
-  return (mean / std) * Math.sqrt(252);
+  return (mean / std) * SHARPE_ANNUALIZATION;
 };
 
 const computeSortino = (returns: number[]): number => {
@@ -353,5 +355,5 @@ const computeSortino = (returns: number[]): number => {
   const downsideVariance = downside.reduce((sum, value) => sum + value ** 2, 0) / downside.length;
   const downsideDev = Math.sqrt(downsideVariance);
   if (downsideDev === 0) return 0;
-  return (mean / downsideDev) * Math.sqrt(252);
+  return (mean / downsideDev) * SHARPE_ANNUALIZATION;
 };

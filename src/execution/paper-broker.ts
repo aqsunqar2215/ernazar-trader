@@ -7,6 +7,12 @@ import { Logger } from '../state/logger.js';
 interface PaperBrokerOptions {
   feeBps: number;
   slippageBps: number;
+  rejectRate?: number;
+  partialFillRate?: number;
+  minFillRatio?: number;
+  maxFillRatio?: number;
+  minLatencyMs?: number;
+  maxLatencyMs?: number;
 }
 
 export class PaperBroker implements Broker {
@@ -37,11 +43,51 @@ export class PaperBroker implements Broker {
     }
 
     const now = Date.now();
+    const latencyMs = randomBetween(
+      this.options.minLatencyMs ?? 120,
+      this.options.maxLatencyMs ?? 950,
+    );
+    if (latencyMs > 0) {
+      await sleep(latencyMs);
+    }
+    const executedAt = Date.now();
+    const rejectRate = clampRate(this.options.rejectRate ?? 0.04);
+    if (Math.random() < rejectRate) {
+      const orderId = `paper-${request.clientOrderId}`;
+      const order: OrderRecord = {
+        clientOrderId: request.clientOrderId,
+        exchangeOrderId: orderId,
+        symbol: request.symbol,
+        side: request.side,
+        quantity: request.quantity,
+        filledQuantity: 0,
+        avgFillPrice: 0,
+        status: 'rejected',
+        reason: 'simulated rejection',
+        createdAt: now,
+        updatedAt: executedAt,
+      };
+      this.db.upsertOrder(order);
+      return {
+        orderId,
+        status: 'rejected',
+        reason: order.reason,
+        acceptedAt: executedAt,
+      };
+    }
+
     const orderId = `paper-${request.clientOrderId}`;
     const slip = this.options.slippageBps / 10_000;
     const feeRate = this.options.feeBps / 10_000;
-    const filledQuantity = request.quantity;
-    const fillParts = Math.random() > 0.45 ? [filledQuantity] : [filledQuantity * 0.6, filledQuantity * 0.4];
+    const partialFillRate = clampRate(this.options.partialFillRate ?? 0.25);
+    const minFillRatio = clampRatio(this.options.minFillRatio ?? 0.45);
+    const maxFillRatio = clampRatio(this.options.maxFillRatio ?? 0.9);
+    const fillRatio = Math.random() < partialFillRate
+      ? randomBetween(minFillRatio, Math.max(minFillRatio, maxFillRatio))
+      : 1;
+    const filledQuantity = Math.max(0, request.quantity * fillRatio);
+    const status = filledQuantity >= request.quantity * 0.999 ? 'filled' : 'partial';
+    const fillParts = splitFillParts(filledQuantity);
     const fills: Fill[] = [];
     let sumPxQty = 0;
     let totalFees = 0;
@@ -59,14 +105,24 @@ export class PaperBroker implements Broker {
         price,
         quantity: part,
         fee,
-        timestamp: now,
+        timestamp: executedAt,
       });
     }
-    const avgFillPrice = sumPxQty / filledQuantity;
+    const avgFillPrice = filledQuantity > 0 ? sumPxQty / filledQuantity : 0;
 
-    const { updated, realizedPnlUsd } = this.applyPositionUpdate(request.symbol, request.side, filledQuantity, avgFillPrice);
-    updated.updatedAt = now;
-    this.positions.set(updated.symbol, updated);
+    let realizedPnlUsd = 0;
+    if (filledQuantity > 0) {
+      const { updated, realizedPnlUsd: realized } = this.applyPositionUpdate(
+        request.symbol,
+        request.side,
+        filledQuantity,
+        avgFillPrice,
+      );
+      realizedPnlUsd = realized;
+      updated.updatedAt = executedAt;
+      this.positions.set(updated.symbol, updated);
+      this.db.upsertPosition(updated);
+    }
 
     const order: OrderRecord = {
       clientOrderId: request.clientOrderId,
@@ -76,31 +132,33 @@ export class PaperBroker implements Broker {
       quantity: request.quantity,
       filledQuantity,
       avgFillPrice,
-      status: 'accepted',
+      status,
+      reason: status === 'partial' ? 'partial fill simulated' : undefined,
       createdAt: now,
-      updatedAt: now,
+      updatedAt: executedAt,
     };
     this.db.upsertOrder(order);
     for (const fill of fills) {
       this.db.insertFill(fill);
     }
-    this.db.upsertPosition(updated);
 
-    this.logger.info('paper order filled', {
+    this.logger.info('paper order executed', {
       symbol: request.symbol,
       side: request.side,
       quantity: request.quantity,
       avgFillPrice,
       realizedPnlUsd,
+      status,
     });
 
     return {
       orderId,
-      status: 'accepted',
+      status,
+      reason: order.reason,
       fills,
       filledQuantity,
       avgFillPrice,
-      acceptedAt: now,
+      acceptedAt: executedAt,
       realizedPnlUsd,
       feesUsd: totalFees,
     };
@@ -108,10 +166,12 @@ export class PaperBroker implements Broker {
 
   async cancelOrder(clientOrderId: string): Promise<void> {
     const existing = this.db.getOrderByClientId(clientOrderId);
-    if (!existing || existing.status !== 'accepted') return;
+    if (!existing || existing.status === 'filled' || existing.status === 'rejected' || existing.status === 'canceled') {
+      return;
+    }
     this.db.upsertOrder({
       ...existing,
-      status: 'rejected',
+      status: 'canceled',
       reason: 'cancelled',
       updatedAt: Date.now(),
     });
@@ -176,3 +236,22 @@ export class PaperBroker implements Broker {
     return { updated, realizedPnlUsd };
   }
 }
+
+const sleep = (ms: number): Promise<void> => new Promise(resolve => setTimeout(resolve, ms));
+
+const clampRate = (value: number): number => Math.max(0, Math.min(0.6, value));
+
+const clampRatio = (value: number): number => Math.max(0.05, Math.min(1, value));
+
+const randomBetween = (min: number, max: number): number => {
+  if (!Number.isFinite(min) || !Number.isFinite(max)) return 0;
+  if (max <= min) return min;
+  return min + Math.random() * (max - min);
+};
+
+const splitFillParts = (totalQty: number): number[] => {
+  if (totalQty <= 0) return [];
+  if (Math.random() < 0.5) return [totalQty];
+  const first = totalQty * randomBetween(0.35, 0.75);
+  return [first, Math.max(0, totalQty - first)];
+};

@@ -43,7 +43,7 @@ interface OrderRow {
   quantity: number;
   filled_quantity: number;
   avg_fill_price: number;
-  status: 'accepted' | 'rejected';
+  status: string;
   reason: string | null;
   created_at: number;
   updated_at: number;
@@ -416,7 +416,7 @@ export class StateDb {
       quantity: row.quantity,
       filledQuantity: row.filled_quantity,
       avgFillPrice: row.avg_fill_price,
-      status: row.status,
+      status: normalizeOrderStatus(row.status),
       reason: row.reason ?? undefined,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
@@ -440,7 +440,7 @@ export class StateDb {
       quantity: row.quantity,
       filledQuantity: row.filled_quantity,
       avgFillPrice: row.avg_fill_price,
-      status: row.status,
+      status: normalizeOrderStatus(row.status),
       reason: row.reason ?? undefined,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
@@ -547,3 +547,20 @@ export class StateDb {
     this.db.close();
   }
 }
+
+const normalizeOrderStatus = (status: string): OrderRecord['status'] => {
+  switch (status) {
+    case 'filled':
+    case 'partial':
+    case 'pending':
+    case 'canceled':
+    case 'rejected':
+      return status;
+    case 'accepted':
+      return 'filled';
+    case 'cancelled':
+      return 'canceled';
+    default:
+      return 'rejected';
+  }
+};

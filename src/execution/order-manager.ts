@@ -32,7 +32,9 @@ export class OrderManager {
     const broker = request.intent === 'live' ? this.brokers.live : this.brokers.paper;
     while (attempt <= this.maxRetries) {
       try {
-        return await broker.placeOrder(request);
+        const result = await broker.placeOrder(request);
+        this.recordOrder(request, result);
+        return result;
       } catch (error) {
         attempt += 1;
         this.logger.warn('order submit retry', {
@@ -54,5 +56,27 @@ export class OrderManager {
   async reconcile(): Promise<void> {
     await this.brokers.paper.reconcile();
     await this.brokers.live.reconcile();
+  }
+
+  private recordOrder(request: BrokerOrderRequest, result: BrokerOrderResult): void {
+    const existing = this.db.getOrderByClientId(request.clientOrderId);
+    const now = Date.now();
+    const order = {
+      clientOrderId: request.clientOrderId,
+      exchangeOrderId: result.orderId || existing?.exchangeOrderId || `unknown-${request.clientOrderId}`,
+      symbol: request.symbol,
+      side: request.side,
+      quantity: request.quantity,
+      filledQuantity: result.filledQuantity ?? existing?.filledQuantity ?? 0,
+      avgFillPrice: result.avgFillPrice ?? existing?.avgFillPrice ?? 0,
+      status: result.status ?? existing?.status ?? 'rejected',
+      reason: result.reason ?? existing?.reason,
+      createdAt: existing?.createdAt ?? now,
+      updatedAt: now,
+    } as const;
+
+    if (!existing || existing.status !== order.status || existing.filledQuantity !== order.filledQuantity) {
+      this.db.upsertOrder(order);
+    }
   }
 }

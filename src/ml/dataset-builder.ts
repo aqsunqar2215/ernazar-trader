@@ -10,7 +10,8 @@ export interface TrainingSample {
 
 export class DatasetBuilder {
   build(candles: Candle[], fills: Fill[], horizonBars: number = 3): TrainingSample[] {
-    const grouped = groupBySeries(candles);
+    const filtered = candles.filter(candle => candle.source !== 'gap_fill');
+    const grouped = groupBySeries(filtered);
     const samples: TrainingSample[] = [];
 
     for (const [seriesKey, series] of grouped.entries()) {

@@ -2,6 +2,7 @@ export type TradingSymbol = 'BTCUSDT' | 'ETHUSDT' | (string & {});
 export type Timeframe = '1m' | '5m' | '1h';
 export type OrderSide = 'buy' | 'sell';
 export type SignalAction = 'buy' | 'sell' | 'hold';
+export type OrderStatus = 'pending' | 'partial' | 'filled' | 'canceled' | 'rejected';
 
 export interface Candle {
   symbol: TradingSymbol;
@@ -54,7 +55,7 @@ export interface BrokerOrderRequest {
 
 export interface BrokerOrderResult {
   orderId: string;
-  status: 'accepted' | 'rejected';
+  status: OrderStatus;
   reason?: string;
   fills?: Fill[];
   filledQuantity?: number;
@@ -91,7 +92,7 @@ export interface OrderRecord {
   quantity: number;
   filledQuantity: number;
   avgFillPrice: number;
-  status: 'accepted' | 'rejected';
+  status: OrderStatus;
   reason?: string;
   createdAt: number;
   updatedAt: number;

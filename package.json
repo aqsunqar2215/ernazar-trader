@@ -11,6 +11,7 @@
     "dev": "tsx src/index.ts",
     "check": "tsc -p tsconfig.json --noEmit",
     "backfill": "tsx src/scripts/backfill.ts",
+    "backtest": "tsx scripts/test-multisymbol-backtest.ts",
     "train:target": "node scripts/train-until-target.mjs",
     "test:multisymbol": "tsx scripts/test-multisymbol-backtest.ts"
   },

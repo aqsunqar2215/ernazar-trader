@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url';
 import Fastify, { type FastifyInstance } from 'fastify';
 import fastifyWebsocket from '@fastify/websocket';
 import fastifyStatic from '@fastify/static';
+import type WebSocket from 'ws';
 import { CandlesCache } from '../market/candles-cache.js';
 import { StateDb } from '../state/db.js';
 import { Logger } from '../state/logger.js';
@@ -29,7 +30,7 @@ interface ApiHandlers {
 export class ApiServer {
   private readonly app: FastifyInstance;
   private readonly logger: Logger;
-  private readonly wsClients = new Set<any>();
+  private readonly wsClients = new Set<WebSocket>();
   private readonly streamHistory: Array<Candle | TradeTick> = [];
   private startedAt: number = Date.now();
 
@@ -123,7 +124,7 @@ export class ApiServer {
     });
 
     this.app.get('/stream', { websocket: true }, connection => {
-      const socket = connection.socket;
+      const socket = connection;
       this.wsClients.add(socket);
       socket.send(
         JSON.stringify({

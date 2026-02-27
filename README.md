@@ -87,7 +87,7 @@ pnpm dev
 3. Тренировка RL challenger в offline simulator:
    - исторический replay (без утечки будущего),
    - комиссии/проскальзывание/латентность,
-   - risk-aware reward (turnover/drawdown penalties).
+   - TD reward согласован с оценкой: нормированный PnL, cost и drawdown penalty.
 4. Оценка на walk-forward/holdout/unseen (по конфигу).
 5. Промоут в champion только при прохождении gate-ограничений.
 6. Realtime RL shadow (нулевая отправка ордеров).
@@ -133,6 +133,7 @@ TARGET_WIN_RATE=0.50 TARGET_NET_PNL=0 MAX_ITERS=300 pnpm train:target
 - ML gates: `MIN_WF_SHARPE`, `MIN_WF_PROFIT_FACTOR`, `MAX_WF_DRAWDOWN`.
 - Promotion controls: `ML_SIMPLE_PROMOTION_*`, `ML_HOLDOUT_RATIO`, `ML_UNSEEN_*`.
 - RL training: `RL_*` (episodes, learning params, penalties, shadow guard).
+- RL walk-forward folds: `ML_RL_WF_FOLDS` (default: 2).
 
 ## Безопасность rollout
 

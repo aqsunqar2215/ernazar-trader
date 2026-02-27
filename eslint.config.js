@@ -1,0 +1,1 @@
+export default[{ignores:["node_modules/**","**/*.ts","**/*.tsx","**/*.d.ts","tmp_*","**/tmp_*"]},{files:["**/*.js","**/*.mjs","**/*.cjs"],languageOptions:{ecmaVersion:"latest",sourceType:"module"},rules:{}}];

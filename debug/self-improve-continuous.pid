@@ -1,0 +1,13 @@
+{
+  "pid": 31972,
+  "startedAt": "2026-03-02T19:39:42.095Z",
+  "logPath": "c:\\Users\\Nitro\\Desktop\\tardes\\repo_hydra_audit\\debug\\self-improve-continuous-live.log",
+  "pidPath": "c:\\Users\\Nitro\\Desktop\\tardes\\repo_hydra_audit\\debug\\self-improve-continuous.pid",
+  "env": {
+    "SELF_IMPROVE_BATCH_ITERS": "16",
+    "SELF_IMPROVE_MAX_CYCLES": "0",
+    "SELF_IMPROVE_CYCLE_SLEEP_MS": "4000",
+    "MAX_WAIT_MS": "300000",
+    "POLL_MS": "3000"
+  }
+}

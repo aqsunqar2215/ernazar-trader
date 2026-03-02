@@ -1,0 +1,31 @@
+{
+  "startedAt": "2026-03-02T18:14:17.632Z",
+  "batchIterations": 16,
+  "maxCycles": 0,
+  "cycleSleepMs": 4000,
+  "minTradesForStable": 1,
+  "minScoreDelta": 0,
+  "stableBestPath": "c:\\Users\\Nitro\\Desktop\\tardes\\repo_hydra_audit\\debug\\self-improve-stable-best.json",
+  "cycles": [
+    {
+      "cycle": 1,
+      "at": "2026-03-02T18:32:48.472Z",
+      "exitCode": 2,
+      "runTag": "20260302T181418214Z",
+      "summaryPath": "c:\\Users\\Nitro\\Desktop\\tardes\\repo_hydra_audit\\debug\\self-improve-summary-20260302T181418214Z.json",
+      "cycleBest": null,
+      "stableScore": null
+    },
+    {
+      "cycle": 2,
+      "at": "2026-03-02T18:51:23.416Z",
+      "exitCode": 2,
+      "runTag": "20260302T183253386Z",
+      "summaryPath": "c:\\Users\\Nitro\\Desktop\\tardes\\repo_hydra_audit\\debug\\self-improve-summary-20260302T183253386Z.json",
+      "cycleBest": null,
+      "stableScore": null
+    }
+  ],
+  "stableBest": null,
+  "lastUpdatedAt": "2026-03-02T18:51:23.416Z"
+}

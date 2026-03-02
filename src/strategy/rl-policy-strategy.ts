@@ -2,7 +2,14 @@ import type { Candle, Signal } from '../core/types.js';
 import { StateDb } from '../state/db.js';
 import { Logger } from '../state/logger.js';
 import { extractFeatures, featureLookback, FEATURE_NAMES } from '../ml/features.js';
-import { actionIndexToLabel, greedyActionIndex, scoreActions, type RlLinearQPolicyModel } from '../ml/rl-policy.js';
+import {
+  actionIndexToLabel,
+  actionIndexToValue,
+  selectActionWithConfidence,
+  scoreActions,
+  type RlLinearQPolicyModel,
+} from '../ml/rl-policy.js';
+import type { AppConfig } from '../core/config.js';
 import type { Strategy } from './strategy.js';
 
 interface SymbolState {
@@ -10,6 +17,7 @@ interface SymbolState {
   position: -1 | 0 | 1;
   positionEntryStep: number;
   lastTurnoverStep: number;
+  lastFlipStep: number;
   candles: Candle[];
 }
 
@@ -21,6 +29,7 @@ export class RlPolicyStrategy implements Strategy {
     private readonly db: StateDb,
     private model: RlLinearQPolicyModel,
     logger: Logger,
+    private readonly config: AppConfig,
   ) {
     this.logger = logger.child('rl-policy-strategy');
   }
@@ -36,6 +45,7 @@ export class RlPolicyStrategy implements Strategy {
       position: 0,
       positionEntryStep: 0,
       lastTurnoverStep: 0,
+      lastFlipStep: 0,
       candles: [],
     };
 
@@ -47,9 +57,13 @@ export class RlPolicyStrategy implements Strategy {
 
     const dbPosition = this.lookupPosition(candle.symbol);
     if (dbPosition !== state.position) {
+      const prev = state.position;
       state.position = dbPosition;
       state.positionEntryStep = state.step;
       state.lastTurnoverStep = state.step;
+      if (Math.abs(prev - dbPosition) === 2) {
+        state.lastFlipStep = state.step;
+      }
     }
 
     this.states.set(key, state);
@@ -74,10 +88,36 @@ export class RlPolicyStrategy implements Strategy {
       lastTurnoverAge,
     });
     const features = alignFeatures(rawFeatures, this.model.featureNames);
+    const selection = selectActionWithConfidence({
+      features,
+      model: this.model,
+      epsilon: 0,
+      confidenceGateEnabled: this.config.rl.confidenceGateEnabled,
+      confidenceQGap: this.config.rl.confidenceQGap,
+    });
     const scores = scoreActions(features, this.model);
-    const actionIndex = greedyActionIndex(features, this.model);
-    const action = actionIndexToLabel(actionIndex);
-    const strength = action === 'hold' ? 0 : scoreToStrength(scores, actionIndex);
+    const desiredPosition = actionIndexToValue(selection.actionIdx);
+    const noOp = desiredPosition === state.position;
+    if (noOp) {
+      return {
+        symbol: candle.symbol,
+        timeframe: candle.timeframe,
+        action: 'hold',
+        strength: 0,
+        reason: 'rl no-op',
+        qGap: selection.qGap,
+        regime: selection.regime,
+        gateTriggered: selection.gateTriggered,
+        timestamp: Date.now(),
+      };
+    }
+
+    const action = actionIndexToLabel(selection.actionIdx);
+    const baseStrength = scoreToStrength(scores, selection.actionIdx);
+    const confidenceScaler = Math.min(1, Math.max(0, selection.qGap / Math.max(1e-9, this.config.rl.confidenceQGap * 2)));
+    const volatility = featureByName(features, this.model.featureNames, 'volatility');
+    const volScaler = 1 / (1 + Math.max(0, volatility) * 4);
+    const strength = Math.max(0, Math.min(1, baseStrength * (0.6 + 0.4 * confidenceScaler) * volScaler));
 
     return {
       symbol: candle.symbol,
@@ -85,6 +125,9 @@ export class RlPolicyStrategy implements Strategy {
       action,
       strength,
       reason: 'rl policy',
+      qGap: selection.qGap,
+      regime: selection.regime,
+      gateTriggered: selection.gateTriggered,
       timestamp: Date.now(),
     };
   }
@@ -115,4 +158,11 @@ const scoreToStrength = (scores: number[], bestIdx: number): number => {
   const probs = exp.map(value => value / total);
   const bestProb = probs[bestIdx] ?? 0;
   return Math.min(1, Math.abs(bestProb - 1 / 3) * 1.6);
+};
+
+const featureByName = (features: number[], names: string[], name: string): number => {
+  const idx = names.indexOf(name);
+  if (idx < 0 || idx >= features.length) return 0;
+  const value = features[idx];
+  return Number.isFinite(value) ? value : 0;
 };

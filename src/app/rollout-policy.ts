@@ -20,11 +20,26 @@ export class RolloutPolicy {
 
   constructor(private readonly config: RolloutPolicyConfig) {}
 
-  evaluate(metrics: PaperWindowMetrics): { stage: RolloutStage; reason: string; changed: boolean } {
+  evaluate(
+    metrics: PaperWindowMetrics,
+    gates?: { paperSanityPassed?: boolean; shadowGatePassed?: boolean },
+  ): { stage: RolloutStage; reason: string; changed: boolean } {
     const previous = this.stage;
     if (this.config.requestedMode === 'paper') {
       this.stage = 'paper';
       return { stage: this.stage, reason: 'rollout mode pinned to paper', changed: previous !== this.stage };
+    }
+
+    const paperSanityPassed = gates?.paperSanityPassed ?? true;
+    if (!paperSanityPassed) {
+      this.stage = 'paper';
+      return { stage: this.stage, reason: 'paper sanity gate failed', changed: previous !== this.stage };
+    }
+
+    const shadowGatePassed = gates?.shadowGatePassed ?? true;
+    if (!shadowGatePassed) {
+      this.stage = 'paper';
+      return { stage: this.stage, reason: 'shadow gate blocked tiny-live', changed: previous !== this.stage };
     }
 
     const passed =

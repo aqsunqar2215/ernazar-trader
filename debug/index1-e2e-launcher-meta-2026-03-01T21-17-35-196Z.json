@@ -1,0 +1,10 @@
+{
+  "status": "started",
+  "runId": "2026-03-01T21-17-35-196Z",
+  "pipelineId": "index1-e2e-2026-03-01T21-17-35-196Z",
+  "pid": 21668,
+  "startedAt": "2026-03-01T21:17:35.418Z",
+  "launcherLogPath": "c:\\Users\\Nitro\\Desktop\\tardes\\repo_hydra_audit\\debug\\index1-e2e-launcher-2026-03-01T21-17-35-196Z.log",
+  "pipelineLogPath": "c:\\Users\\Nitro\\Desktop\\tardes\\repo_hydra_audit\\debug\\index1-e2e-index1-e2e-2026-03-01T21-17-35-196Z.log",
+  "finalPath": "c:\\Users\\Nitro\\Desktop\\tardes\\repo_hydra_audit\\debug\\index1-e2e-final-index1-e2e-2026-03-01T21-17-35-196Z.json"
+}

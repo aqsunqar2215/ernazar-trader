@@ -1,0 +1,141 @@
+{
+  "ok": false,
+  "baseUrl": "http://127.0.0.1:8101",
+  "observed": {
+    "blockedEvents": 0,
+    "guardBlocksTotal": 658,
+    "guardBlocks": {
+      "confidence": 0,
+      "minHold": 658,
+      "flipCooldown": 0,
+      "confidenceTriggered": 0,
+      "total": 658,
+      "actionsBeforeGuards": 738,
+      "actionsAfterGuards": 79,
+      "confidenceGateEnabled": false,
+      "confidenceQGap": 0.02
+    },
+    "samples": 40
+  },
+  "runtimeStatus": {
+    "stage": "paper",
+    "killSwitch": {
+      "enabled": false,
+      "reason": ""
+    },
+    "cashUsd": 10036.005726986486,
+    "equityUsd": 10036.02061450503,
+    "realizedPnlUsd": 7.258486156900101,
+    "unrealizedPnlUsd": 0.01488751854475074,
+    "drawdownPct": 0.000942365381905557,
+    "paperMetrics": {
+      "trades": 5,
+      "wins": 2,
+      "losses": 3,
+      "grossProfitUsd": 7.347880267976143,
+      "grossLossUsd": 0.08939411107604094,
+      "netPnlUsd": 7.258486156900101,
+      "maxDrawdownPct": 0.7656656017677379,
+      "winRate": 0.4,
+      "profitFactor": 50
+    },
+    "tinyLiveRiskMultiplier": 0.1,
+    "paperSanity": {
+      "passed": false,
+      "reason": "max_drawdown",
+      "netPnlUsd": 7.258486156900101,
+      "maxDrawdownPct": 0.7656656017677379,
+      "criticalAlertsCount": 0
+    },
+    "backtestGate": {
+      "passed": true,
+      "reason": "strategy passed backtest gate (walk-forward informational)"
+    },
+    "shadowGate": {
+      "passed": false,
+      "reason": "awaiting_trades",
+      "tier": 500,
+      "currentTier": 0,
+      "trades": 51,
+      "elapsedMs": 2015359,
+      "kpi": {
+        "tradesPerMinute": 1.5183399086713583,
+        "profitFactor": 1.1298994789902075,
+        "netPnlUsd": -0.18455516107496805,
+        "maxDrawdownPct": 0.007154588799369506
+      },
+      "limits": {
+        "maxTradesPerMinute": 4,
+        "minProfitFactor": 1.12,
+        "minNetPnlUsd": 0,
+        "maxDrawdownPct": 0.01,
+        "timeoutMs": 86400000
+      }
+    },
+    "rlExecutionGuards": {
+      "confidence": 0,
+      "minHold": 13,
+      "flipCooldown": 0,
+      "confidenceTriggered": 0,
+      "actionsBeforeGuards": 1298,
+      "actionsAfterGuards": 1285,
+      "confidenceGateEnabled": false,
+      "confidenceQGap": 0.02,
+      "minHoldBars": 30,
+      "flipCooldownBars": 12
+    },
+    "recentAlerts": []
+  },
+  "rlStatus": {
+    "enabled": true,
+    "modelKind": "rl_linear_q",
+    "initialCapitalUsd": 10000,
+    "equityUsd": 9999.883915000202,
+    "netPnlUsd": -0.11608499979774933,
+    "totalCostsUsd": 0.4218574346377104,
+    "maxDrawdownPct": 0.006469923538331463,
+    "trades": 51,
+    "tradesPerMinute": 1.506058934153233,
+    "startedAt": 1772355532880,
+    "elapsedMs": 2031793,
+    "firstTradeTs": 1772355719999,
+    "lastTradeTs": 1772357759999,
+    "winRate": 0.49019607843137253,
+    "profitFactor": 1.1298994789902075,
+    "qGapStats": {
+      "p50": 0.002081205612964418,
+      "p75": 0.004865762885179772,
+      "p90": 0.007665103124236378
+    },
+    "regimeStats": null,
+    "symbols": [
+      "BTCUSDT",
+      "ETHUSDT"
+    ],
+    "openPositions": [
+      {
+        "symbol": "BTCUSDT",
+        "side": "short",
+        "entryPrice": 66423.23,
+        "entryTs": 1772357700000
+      },
+      {
+        "symbol": "ETHUSDT",
+        "side": "long",
+        "entryPrice": 1981.49,
+        "entryTs": 1772357700000
+      }
+    ],
+    "guardBlocks": {
+      "confidence": 0,
+      "minHold": 659,
+      "flipCooldown": 0,
+      "confidenceTriggered": 0,
+      "total": 659,
+      "actionsBeforeGuards": 739,
+      "actionsAfterGuards": 79,
+      "confidenceGateEnabled": false,
+      "confidenceQGap": 0.02
+    }
+  }
+}

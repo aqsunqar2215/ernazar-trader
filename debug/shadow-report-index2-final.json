@@ -1,0 +1,147 @@
+{
+  "baseUrl": "http://127.0.0.1:8120",
+  "runtimeMode": "spawned",
+  "targetTrades": 100,
+  "reachedTarget": false,
+  "elapsedMs": 7203345,
+  "maxWaitMs": 7200000,
+  "gateTimeoutMs": null,
+  "gate": {
+    "passed": false,
+    "reason": "gate_timeout",
+    "kpi": {
+      "tradesPerMinute": 0,
+      "profitFactor": 0,
+      "netPnlUsd": 0,
+      "maxDrawdownPct": 0
+    },
+    "limits": {
+      "tradesPerMinute": 4,
+      "profitFactor": 1.12,
+      "netPnlUsd": 0,
+      "maxDrawdownPct": 0.01
+    }
+  },
+  "paperSanity": {
+    "passed": true,
+    "reason": "ok",
+    "killSwitchEnabled": false,
+    "criticalAlertsCount": 0
+  },
+  "overallPassed": false,
+  "alertWindow": {
+    "startMs": 1772367156075,
+    "endMs": 1772374304301,
+    "startIso": "2026-03-01T12:12:36.075Z",
+    "endIso": "2026-03-01T14:11:44.301Z"
+  },
+  "criticalAlerts": [],
+  "final": {
+    "ts": "2026-03-01T14:11:44.291Z",
+    "rlTrades": 0,
+    "rlWinRate": null,
+    "rlProfitFactor": null,
+    "rlNetPnlUsd": null,
+    "rlMaxDrawdownPct": null,
+    "rlQGapStats": null,
+    "rlRegimeStats": null,
+    "runtimeStage": null,
+    "runtimePaperTrades": null,
+    "runtimePaperProfitFactor": null
+  },
+  "guardBlocks": null,
+  "sampleStats": {
+    "firstTradeTs": "2026-03-01T12:12:36.075Z",
+    "firstTradeRlTrades": 1,
+    "maxObservedDrawdownPct": 0.030598338338333687,
+    "minObservedNetPnlUsd": -0.012963419923835318,
+    "maxObservedNetPnlUsd": 8.90957012384024,
+    "elapsedMinutes": 119.97216666666667,
+    "tradesPerMinute": 0
+  },
+  "samplesCount": 1438,
+  "lastSamples": [
+    {
+      "ts": "2026-03-01T14:11:19.241Z",
+      "rlTrades": 0,
+      "rlWinRate": null,
+      "rlProfitFactor": null,
+      "rlNetPnlUsd": null,
+      "rlMaxDrawdownPct": null,
+      "rlQGapStats": null,
+      "rlRegimeStats": null,
+      "runtimeStage": null,
+      "runtimePaperTrades": null,
+      "runtimePaperProfitFactor": null
+    },
+    {
+      "ts": "2026-03-01T14:11:24.245Z",
+      "rlTrades": 0,
+      "rlWinRate": null,
+      "rlProfitFactor": null,
+      "rlNetPnlUsd": null,
+      "rlMaxDrawdownPct": null,
+      "rlQGapStats": null,
+      "rlRegimeStats": null,
+      "runtimeStage": null,
+      "runtimePaperTrades": null,
+      "runtimePaperProfitFactor": null
+    },
+    {
+      "ts": "2026-03-01T14:11:29.260Z",
+      "rlTrades": 0,
+      "rlWinRate": null,
+      "rlProfitFactor": null,
+      "rlNetPnlUsd": null,
+      "rlMaxDrawdownPct": null,
+      "rlQGapStats": null,
+      "rlRegimeStats": null,
+      "runtimeStage": null,
+      "runtimePaperTrades": null,
+      "runtimePaperProfitFactor": null
+    },
+    {
+      "ts": "2026-03-01T14:11:34.269Z",
+      "rlTrades": 0,
+      "rlWinRate": null,
+      "rlProfitFactor": null,
+      "rlNetPnlUsd": null,
+      "rlMaxDrawdownPct": null,
+      "rlQGapStats": null,
+      "rlRegimeStats": null,
+      "runtimeStage": null,
+      "runtimePaperTrades": null,
+      "runtimePaperProfitFactor": null
+    },
+    {
+      "ts": "2026-03-01T14:11:39.281Z",
+      "rlTrades": 0,
+      "rlWinRate": null,
+      "rlProfitFactor": null,
+      "rlNetPnlUsd": null,
+      "rlMaxDrawdownPct": null,
+      "rlQGapStats": null,
+      "rlRegimeStats": null,
+      "runtimeStage": null,
+      "runtimePaperTrades": null,
+      "runtimePaperProfitFactor": null
+    }
+  ],
+  "runtimeData": {
+    "alertsCount": 0,
+    "auditEventsCount": 0,
+    "fillsCount": 0,
+    "ordersCount": 0,
+    "equityPoints": 0,
+    "alertsTail": [],
+    "auditTail": []
+  },
+  "finalSnapshots": {
+    "rlStatus": {
+      "error": "TypeError: fetch failed"
+    },
+    "runtimeStatus": {
+      "error": "TypeError: fetch failed"
+    }
+  }
+}

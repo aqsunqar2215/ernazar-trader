@@ -1,0 +1,218 @@
+[
+  {
+    "qGap": 0.005,
+    "minHold": 0,
+    "flipCooldown": 0,
+    "reportPath": "debug/shadow-report-grid-q0p005-h0-f0.json",
+    "error": null,
+    "reachedTarget": false,
+    "gateReason": "gate_timeout",
+    "tradesPerMinute": 1.0284538909838874,
+    "profitFactor": 0,
+    "netPnlUsd": -1.1663957779819611,
+    "maxDrawdownPct": 0.01166395777981961,
+    "guardBlocks": {
+      "confidence": 19,
+      "minHold": 0,
+      "flipCooldown": 0,
+      "total": 19,
+      "confidenceTriggered": 38,
+      "actionsBeforeGuards": 22,
+      "actionsAfterGuards": 3
+    },
+    "qGapStats": {
+      "p50": 0.0029848590638448247,
+      "p75": 0.00415880176562021,
+      "p90": 0.007092879267672769
+    }
+  },
+  {
+    "qGap": 0.005,
+    "minHold": 0,
+    "flipCooldown": 8,
+    "reportPath": "debug/shadow-report-grid-q0p005-h0-f8.json",
+    "error": null,
+    "reachedTarget": false,
+    "gateReason": "gate_timeout",
+    "tradesPerMinute": 0,
+    "profitFactor": 0,
+    "netPnlUsd": 1.6070490337115189,
+    "maxDrawdownPct": 0,
+    "guardBlocks": {
+      "confidence": 7,
+      "minHold": 0,
+      "flipCooldown": 0,
+      "total": 7,
+      "confidenceTriggered": 34,
+      "actionsBeforeGuards": 8,
+      "actionsAfterGuards": 1
+    },
+    "qGapStats": {
+      "p50": 0.0028829793711444424,
+      "p75": 0.005259998351547751,
+      "p90": 0.007126662527187619
+    }
+  },
+  {
+    "qGap": 0.005,
+    "minHold": 5,
+    "flipCooldown": 0,
+    "reportPath": "debug/shadow-report-grid-q0p005-h5-f0.json",
+    "error": null,
+    "reachedTarget": false,
+    "gateReason": "gate_timeout",
+    "tradesPerMinute": 1.0281719103434095,
+    "profitFactor": 0,
+    "netPnlUsd": -1.837735946272005,
+    "maxDrawdownPct": 0.018377359462720053,
+    "guardBlocks": {
+      "confidence": 19,
+      "minHold": 2,
+      "flipCooldown": 0,
+      "total": 21,
+      "confidenceTriggered": 31,
+      "actionsBeforeGuards": 24,
+      "actionsAfterGuards": 3
+    },
+    "qGapStats": {
+      "p50": 0.0034445426802356405,
+      "p75": 0.006511859810336584,
+      "p90": 0.008657636177557507
+    }
+  },
+  {
+    "qGap": 0.005,
+    "minHold": 5,
+    "flipCooldown": 8,
+    "reportPath": "debug/shadow-report-grid-q0p005-h5-f8.json",
+    "error": null,
+    "reachedTarget": false,
+    "gateReason": "gate_timeout",
+    "tradesPerMinute": 1.0291065639847006,
+    "profitFactor": 0,
+    "netPnlUsd": -0.5473519306615344,
+    "maxDrawdownPct": 0.007542964375635964,
+    "guardBlocks": {
+      "confidence": 12,
+      "minHold": 0,
+      "flipCooldown": 0,
+      "total": 12,
+      "confidenceTriggered": 40,
+      "actionsBeforeGuards": 14,
+      "actionsAfterGuards": 2
+    },
+    "qGapStats": {
+      "p50": 0.0018536416010363765,
+      "p75": 0.0032892615980779083,
+      "p90": 0.006103583396667028
+    }
+  },
+  {
+    "qGap": 0.01,
+    "minHold": 0,
+    "flipCooldown": 0,
+    "reportPath": "debug/shadow-report-grid-q0p01-h0-f0.json",
+    "error": null,
+    "reachedTarget": false,
+    "gateReason": "gate_timeout",
+    "tradesPerMinute": 0,
+    "profitFactor": 0,
+    "netPnlUsd": 0,
+    "maxDrawdownPct": 0,
+    "guardBlocks": {
+      "confidence": 25,
+      "minHold": 0,
+      "flipCooldown": 0,
+      "total": 25,
+      "confidenceTriggered": 46,
+      "actionsBeforeGuards": 25,
+      "actionsAfterGuards": 0
+    },
+    "qGapStats": {
+      "p50": 0.003641712726997731,
+      "p75": 0.00589081663532566,
+      "p90": 0.0065105577957445815
+    }
+  },
+  {
+    "qGap": 0.01,
+    "minHold": 0,
+    "flipCooldown": 8,
+    "reportPath": "debug/shadow-report-grid-q0p01-h0-f8.json",
+    "error": null,
+    "reachedTarget": false,
+    "gateReason": "gate_timeout",
+    "tradesPerMinute": 0,
+    "profitFactor": 0,
+    "netPnlUsd": -2.3555105416271545,
+    "maxDrawdownPct": 0.023555105416271545,
+    "guardBlocks": {
+      "confidence": 33,
+      "minHold": 0,
+      "flipCooldown": 0,
+      "total": 33,
+      "confidenceTriggered": 44,
+      "actionsBeforeGuards": 34,
+      "actionsAfterGuards": 1
+    },
+    "qGapStats": {
+      "p50": 0.0036181940515610106,
+      "p75": 0.005903077783342897,
+      "p90": 0.008876667342210154
+    }
+  },
+  {
+    "qGap": 0.01,
+    "minHold": 5,
+    "flipCooldown": 0,
+    "reportPath": "debug/shadow-report-grid-q0p01-h5-f0.json",
+    "error": null,
+    "reachedTarget": false,
+    "gateReason": "gate_timeout",
+    "tradesPerMinute": 0,
+    "profitFactor": 0,
+    "netPnlUsd": 1.1283971933407884,
+    "maxDrawdownPct": 0.0039471572507074094,
+    "guardBlocks": {
+      "confidence": 16,
+      "minHold": 0,
+      "flipCooldown": 0,
+      "total": 16,
+      "confidenceTriggered": 44,
+      "actionsBeforeGuards": 17,
+      "actionsAfterGuards": 1
+    },
+    "qGapStats": {
+      "p50": 0.002503058527184618,
+      "p75": 0.005141192716716328,
+      "p90": 0.007992658067779448
+    }
+  },
+  {
+    "qGap": 0.01,
+    "minHold": 5,
+    "flipCooldown": 8,
+    "reportPath": "debug/shadow-report-grid-q0p01-h5-f8.json",
+    "error": null,
+    "reachedTarget": false,
+    "gateReason": "gate_timeout",
+    "tradesPerMinute": 0,
+    "profitFactor": 0,
+    "netPnlUsd": 0.6269604075860116,
+    "maxDrawdownPct": 0.007419614035647797,
+    "guardBlocks": {
+      "confidence": 16,
+      "minHold": 0,
+      "flipCooldown": 0,
+      "total": 16,
+      "confidenceTriggered": 43,
+      "actionsBeforeGuards": 17,
+      "actionsAfterGuards": 1
+    },
+    "qGapStats": {
+      "p50": 0.003362955132638429,
+      "p75": 0.005276260830486337,
+      "p90": 0.008709190728383595
+    }
+  }
+]

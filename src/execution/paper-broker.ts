@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import type { BrokerOrderRequest, BrokerOrderResult, Fill, OrderRecord, Position } from '../core/types.js';
 import { StateDb } from '../state/db.js';
 import { Logger } from '../state/logger.js';
+import { computeExecutionCosts } from './execution-model.js';
 
 interface PaperBrokerOptions {
   feeBps: number;
@@ -77,8 +78,11 @@ export class PaperBroker implements Broker {
     }
 
     const orderId = `paper-${request.clientOrderId}`;
-    const slip = this.options.slippageBps / 10_000;
-    const feeRate = this.options.feeBps / 10_000;
+    const existingPosition = this.positions.get(request.symbol);
+    const currentSide = existingPosition?.quantity ? Math.sign(existingPosition.quantity) : 0;
+    const desiredSide = request.side === 'buy' ? 1 : -1;
+    const rawTurnover = Math.abs(desiredSide - currentSide);
+    const turnover = rawTurnover === 0 ? 1 : rawTurnover;
     const partialFillRate = clampRate(this.options.partialFillRate ?? 0.25);
     const minFillRatio = clampRatio(this.options.minFillRatio ?? 0.45);
     const maxFillRatio = clampRatio(this.options.maxFillRatio ?? 0.9);
@@ -91,10 +95,19 @@ export class PaperBroker implements Broker {
     const fills: Fill[] = [];
     let sumPxQty = 0;
     let totalFees = 0;
+    const execCosts = computeExecutionCosts({
+      notionalUsd: request.markPrice * Math.max(0, filledQuantity),
+      turnover,
+      feeBps: this.options.feeBps,
+      slippageBps: this.options.slippageBps,
+      turnoverPenaltyBps: 0,
+      volatility: 0,
+      macdHistNorm: 0,
+    });
+    const perUnitFee = filledQuantity > 0 ? execCosts.feeCost / filledQuantity : 0;
     for (const part of fillParts) {
-      const signedSlip = request.side === 'buy' ? 1 + slip : 1 - slip;
-      const price = request.markPrice * signedSlip;
-      const fee = price * part * feeRate;
+      const price = request.markPrice;
+      const fee = perUnitFee * part;
       sumPxQty += price * part;
       totalFees += fee;
       fills.push({

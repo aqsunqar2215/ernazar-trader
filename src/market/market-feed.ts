@@ -100,7 +100,10 @@ export class MarketDataFeed extends EventEmitter {
 
   private startMock(): void {
     const now = Date.now();
-    this.mockClock = bucketTimestamp(now, '1m');
+    const offsetMinutesRaw = Number(process.env.MOCK_CLOCK_OFFSET_MINUTES ?? '0');
+    const offsetMinutes = Number.isFinite(offsetMinutesRaw) ? Math.max(0, offsetMinutesRaw) : 0;
+    const offsetMs = offsetMinutes * 60_000;
+    this.mockClock = bucketTimestamp(now - offsetMs, '1m');
 
     for (const symbol of this.options.symbols) {
       this.lastPrice.set(symbol, symbol.startsWith('ETH') ? 3_500 : 65_000);

@@ -38,11 +38,20 @@ export class StrategyRouter implements Strategy {
     }
     switch (pick) {
       case 'rl':
-        return this.rl?.strategy.onCandle(candle) ?? this.momentum.onCandle(candle);
+        return {
+          ...(this.rl?.strategy.onCandle(candle) ?? this.momentum.onCandle(candle)),
+          policy: 'rl',
+        };
       case 'supervised':
-        return this.supervised?.strategy.onCandle(candle) ?? this.momentum.onCandle(candle);
+        return {
+          ...(this.supervised?.strategy.onCandle(candle) ?? this.momentum.onCandle(candle)),
+          policy: 'supervised',
+        };
       default:
-        return this.momentum.onCandle(candle);
+        return {
+          ...this.momentum.onCandle(candle),
+          policy: 'momentum',
+        };
     }
   }
 
@@ -54,7 +63,7 @@ export class StrategyRouter implements Strategy {
       if (rlPolicy && (!this.rl || this.rl.id !== rlChampion.id)) {
         this.rl = {
           id: rlChampion.id,
-          strategy: new RlPolicyStrategy(this.db, rlPolicy, this.logger),
+          strategy: new RlPolicyStrategy(this.db, rlPolicy, this.logger, this.config),
         };
       }
     } else {
@@ -98,11 +107,24 @@ export class StrategyRouter implements Strategy {
     if (!Array.isArray(model.qWeights) || model.qWeights.length !== 3) return undefined;
     if (!Array.isArray(model.qBias) || model.qBias.length !== 3) return undefined;
     if (!Array.isArray(model.featureNames) || model.featureNames.length === 0) return undefined;
+    const regimeHeads = model.regimeHeads
+      ? {
+          trend: {
+            qWeights: model.regimeHeads.trend.qWeights.map(row => [...row]),
+            qBias: [...model.regimeHeads.trend.qBias],
+          },
+          mean: {
+            qWeights: model.regimeHeads.mean.qWeights.map(row => [...row]),
+            qBias: [...model.regimeHeads.mean.qBias],
+          },
+        }
+      : undefined;
     return {
       kind: 'rl_linear_q',
       featureNames: [...model.featureNames],
       qWeights: model.qWeights.map(row => [...row]),
       qBias: [...model.qBias],
+      regimeHeads,
       epsilon: 0,
     };
   }

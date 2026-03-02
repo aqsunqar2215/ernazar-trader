@@ -1,0 +1,22 @@
+{
+  "ok": true,
+  "rlAttempted": true,
+  "rlPromoted": false,
+  "rlReason": "ensemble median OOS profit factor below threshold (4.2828 < 99.0000)",
+  "ensemble": {
+    "enabled": true,
+    "size": 3,
+    "medianOosProfitFactor": 4.2827759734528135,
+    "selectedOosProfitFactor": 4.2827759734528135,
+    "scores": [
+      4.2827759734528135,
+      4.2827759734528135,
+      4.2827759734528135
+    ]
+  },
+  "ensembleGate": {
+    "passed": false,
+    "reason": "ensemble median OOS profit factor below threshold (4.2828 < 99.0000)",
+    "medianOosProfitFactor": 4.2827759734528135
+  }
+}

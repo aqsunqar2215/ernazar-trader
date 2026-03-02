@@ -24,7 +24,9 @@ export interface AppConfig {
     maxDailyLossUsd: number;
     maxDrawdownPct: number;
     maxOrdersPerMinute: number;
+    maxTurnoverPerHour: number;
     cooldownLossStreak: number;
+    cooldownLossMinutes: number;
   };
   execution: {
     feeBps: number;
@@ -60,6 +62,7 @@ export interface AppConfig {
     minRetrainIntervalMinutes: number;
     retrainIntervalHours: number;
     registryPath: string;
+    oosMinCandlesPerSymbol: number;
   };
   rl: {
     enabled: boolean;
@@ -74,6 +77,20 @@ export interface AppConfig {
     rewardCostWeight: number;
     rewardHoldPenalty: number;
     rewardActionBonus: number;
+    confidenceGateEnabled: boolean;
+    confidenceQGap: number;
+    confidenceQGapAdaptiveEnabled: boolean;
+    confidenceQGapAdaptiveQuantile: number;
+    confidenceQGapAdaptiveScale: number;
+    confidenceQGapMin: number;
+    minSignalStrength: number;
+    holdFlattenEnabled: boolean;
+    minHoldBars: number;
+    flipCooldownBars: number;
+    maxPositionBars: number;
+    regimeSplitEnabled: boolean;
+    ensembleEnabled: boolean;
+    ensembleSize: number;
     minEpisodes: number;
     earlyStopPatience: number;
     earlyStopMinDelta: number;
@@ -99,11 +116,25 @@ export interface AppConfig {
     shadowGuardMinProfitFactor: number;
     shadowGuardMaxDrawdownPct: number;
     shadowGuardMinNetPnlUsd: number;
+    shadowGateEnabled: boolean;
+    shadowGateTier1Trades: number;
+    shadowGateTier2Trades: number;
+    shadowGateTier3Trades: number;
+    shadowGateTier1TimeoutHours: number;
+    shadowGateTier2TimeoutHours: number;
+    shadowGateTier3TimeoutHours: number;
+    shadowGateMaxTradesPerMinute: number;
+    shadowGateMinProfitFactor: number;
+    shadowGateMinNetPnlUsd: number;
+    shadowGateMaxDrawdownPct: number;
+    shadowGateRequiredTier: number;
   };
   rollout: {
     mode: 'paper' | 'tiny_live';
     tinyLiveMaxNotionalUsd: number;
     enableLiveOrders: boolean;
+    paperSanityMinNetPnlUsd: number;
+    paperSanityMaxDrawdownPct: number;
   };
 }
 
@@ -169,10 +200,12 @@ export const config: AppConfig = {
     maxDailyLossUsd: parseNumber(process.env.MAX_DAILY_LOSS_USD, 250),
     maxDrawdownPct: parseNumber(process.env.MAX_DRAWDOWN_PCT, 10),
     maxOrdersPerMinute: parseNumber(process.env.MAX_ORDERS_PER_MINUTE, 8),
+    maxTurnoverPerHour: parseNumber(process.env.MAX_TURNOVER_PER_HOUR, 120),
     cooldownLossStreak: parseNumber(process.env.COOLDOWN_LOSS_STREAK, 3),
+    cooldownLossMinutes: parseNumber(process.env.COOLDOWN_LOSS_MINUTES, 15),
   },
   execution: {
-    feeBps: parseNumber(process.env.FEE_BPS, 4),
+    feeBps: parseNumber(process.env.FEE_BPS, 10),
     slippageBps: parseNumber(process.env.SLIPPAGE_BPS, 2),
     initialEquityUsd: parseNumber(process.env.INITIAL_EQUITY_USD, 10_000),
     paperOnly,
@@ -205,6 +238,7 @@ export const config: AppConfig = {
     minRetrainIntervalMinutes: parseNumber(process.env.ML_MIN_RETRAIN_INTERVAL_MINUTES, 5),
     retrainIntervalHours: parseNumber(process.env.RETRAIN_INTERVAL_HOURS, 24),
     registryPath: process.env.MODEL_REGISTRY_PATH || './data/model-registry.json',
+    oosMinCandlesPerSymbol: parseNumber(process.env.ML_OOS_MIN_CANDLES_PER_SYMBOL, 43_200),
   },
   rl: {
     enabled: (process.env.RL_ENABLED || 'true').toLowerCase() !== 'false',
@@ -214,11 +248,25 @@ export const config: AppConfig = {
     epsilonStart: parseNumber(process.env.RL_EPSILON_START, 0.35),
     epsilonEnd: parseNumber(process.env.RL_EPSILON_END, 0.05),
     latencyBars: parseNumber(process.env.RL_LATENCY_BARS, 1),
-    turnoverPenaltyBps: parseNumber(process.env.RL_TURNOVER_PENALTY_BPS, 0.2),
+    turnoverPenaltyBps: parseNumber(process.env.RL_TURNOVER_PENALTY_BPS, 0.5),
     drawdownPenaltyFactor: parseNumber(process.env.RL_DRAWDOWN_PENALTY, 0.05),
-    rewardCostWeight: parseNumber(process.env.RL_REWARD_COST_WEIGHT, 0.5),
+    rewardCostWeight: parseNumber(process.env.RL_REWARD_COST_WEIGHT, 0.8),
     rewardHoldPenalty: parseNumber(process.env.RL_REWARD_HOLD_PENALTY, 0.00012),
-    rewardActionBonus: parseNumber(process.env.RL_REWARD_ACTION_BONUS, 0.00005),
+    rewardActionBonus: parseNumber(process.env.RL_REWARD_ACTION_BONUS, 0),
+    confidenceGateEnabled: (process.env.RL_CONFIDENCE_GATE_ENABLED || 'true').toLowerCase() === 'true',
+    confidenceQGap: parseNumber(process.env.RL_CONFIDENCE_Q_GAP, 0.02),
+    confidenceQGapAdaptiveEnabled: (process.env.RL_CONFIDENCE_Q_GAP_ADAPTIVE_ENABLED || 'true').toLowerCase() !== 'false',
+    confidenceQGapAdaptiveQuantile: parseNumber(process.env.RL_CONFIDENCE_Q_GAP_ADAPTIVE_QUANTILE, 0.6),
+    confidenceQGapAdaptiveScale: parseNumber(process.env.RL_CONFIDENCE_Q_GAP_ADAPTIVE_SCALE, 0.8),
+    confidenceQGapMin: parseNumber(process.env.RL_CONFIDENCE_Q_GAP_MIN, 0.001),
+    minSignalStrength: parseNumber(process.env.RL_MIN_SIGNAL_STRENGTH, 0),
+    holdFlattenEnabled: (process.env.RL_HOLD_FLATTEN_ENABLED || 'false').toLowerCase() === 'true',
+    minHoldBars: parseNumber(process.env.RL_MIN_HOLD_BARS, 5),
+    flipCooldownBars: parseNumber(process.env.RL_FLIP_COOLDOWN_BARS, 8),
+    maxPositionBars: parseNumber(process.env.RL_MAX_POSITION_BARS, 0),
+    regimeSplitEnabled: (process.env.RL_REGIME_SPLIT_ENABLED || 'false').toLowerCase() === 'true',
+    ensembleEnabled: (process.env.RL_ENSEMBLE_ENABLED || 'false').toLowerCase() === 'true',
+    ensembleSize: parseNumber(process.env.RL_ENSEMBLE_SIZE, 5),
     minEpisodes: parseNumber(process.env.RL_MIN_EPISODES, 80),
     earlyStopPatience: parseNumber(process.env.RL_EARLY_STOP_PATIENCE, 35),
     earlyStopMinDelta: parseNumber(process.env.RL_EARLY_STOP_MIN_DELTA, 0.0004),
@@ -244,10 +292,24 @@ export const config: AppConfig = {
     shadowGuardMinProfitFactor: parseNumber(process.env.RL_SHADOW_GUARD_MIN_PF, 0.95),
     shadowGuardMaxDrawdownPct: parseNumber(process.env.RL_SHADOW_GUARD_MAX_DD_PCT, 6),
     shadowGuardMinNetPnlUsd: parseNumber(process.env.RL_SHADOW_GUARD_MIN_NET_PNL_USD, -40),
+    shadowGateEnabled: (process.env.RL_SHADOW_GATE_ENABLED || 'true').toLowerCase() !== 'false',
+    shadowGateTier1Trades: parseNumber(process.env.RL_SHADOW_GATE_TIER1_TRADES, 100),
+    shadowGateTier2Trades: parseNumber(process.env.RL_SHADOW_GATE_TIER2_TRADES, 500),
+    shadowGateTier3Trades: parseNumber(process.env.RL_SHADOW_GATE_TIER3_TRADES, 1000),
+    shadowGateTier1TimeoutHours: parseNumber(process.env.RL_SHADOW_GATE_TIER1_TIMEOUT_HOURS, 24),
+    shadowGateTier2TimeoutHours: parseNumber(process.env.RL_SHADOW_GATE_TIER2_TIMEOUT_HOURS, 24),
+    shadowGateTier3TimeoutHours: parseNumber(process.env.RL_SHADOW_GATE_TIER3_TIMEOUT_HOURS, 48),
+    shadowGateMaxTradesPerMinute: parseNumber(process.env.RL_SHADOW_GATE_MAX_TPM, 4),
+    shadowGateMinProfitFactor: parseNumber(process.env.RL_SHADOW_GATE_MIN_PF, 1.12),
+    shadowGateMinNetPnlUsd: parseNumber(process.env.RL_SHADOW_GATE_MIN_NET_PNL_USD, 0),
+    shadowGateMaxDrawdownPct: parseNumber(process.env.RL_SHADOW_GATE_MAX_DD_PCT, 0.01),
+    shadowGateRequiredTier: parseNumber(process.env.RL_SHADOW_GATE_REQUIRED_TIER, 500),
   },
   rollout: {
     mode: rolloutMode,
     tinyLiveMaxNotionalUsd: parseNumber(process.env.TINY_LIVE_MAX_NOTIONAL_USD, 100),
     enableLiveOrders: (process.env.ENABLE_LIVE_ORDERS || 'false').toLowerCase() === 'true',
+    paperSanityMinNetPnlUsd: parseNumber(process.env.ROLLOUT_PAPER_SANITY_MIN_NET_PNL_USD, 0),
+    paperSanityMaxDrawdownPct: parseNumber(process.env.ROLLOUT_PAPER_SANITY_MAX_DD_PCT, 0.01),
   },
 };

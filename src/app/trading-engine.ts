@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import type { AppConfig } from '../core/config.js';
-import type { AlertEvent, AuditEvent, Candle, EquityPoint, Signal } from '../core/types.js';
+import type { AlertEvent, AuditEvent, Candle, EquityPoint, ShadowGateStatus, Signal } from '../core/types.js';
 import { StateDb } from '../state/db.js';
 import { Logger } from '../state/logger.js';
 import { MarketDataFeed } from '../market/market-feed.js';
@@ -20,6 +20,22 @@ interface PaperMetrics {
   maxDrawdownPct: number;
 }
 
+interface ExecutionGuardState {
+  step: number;
+  position: -1 | 0 | 1;
+  positionEntryStep: number;
+  lastTurnoverStep: number;
+  lastFlipStep: number;
+}
+
+interface PaperSanityStatus {
+  passed: boolean;
+  reason: string;
+  netPnlUsd: number;
+  maxDrawdownPct: number;
+  criticalAlertsCount: number;
+}
+
 export class TradingEngine {
   private readonly logger: Logger;
   private readonly strategy: Strategy;
@@ -27,6 +43,7 @@ export class TradingEngine {
   private readonly killSwitch = new KillSwitch();
   private readonly rollout: RolloutPolicy;
   private readonly orderTimes: number[] = [];
+  private readonly turnoverEvents: Array<{ ts: number; units: number }> = [];
   private candleQueue: Promise<void> = Promise.resolve();
   private started = false;
   private cashUsd: number;
@@ -36,6 +53,7 @@ export class TradingEngine {
   private dayRealizedBaseline = 0;
   private dayKey = this.currentDayKey();
   private recentLossStreak = 0;
+  private lossCooldownUntilMs = 0;
   private paperMetrics: PaperMetrics = {
     trades: 0,
     wins: 0,
@@ -50,6 +68,20 @@ export class TradingEngine {
   private backtestGateReason = 'not evaluated';
   private backtestAlerted = false;
   private tinyLiveRiskMultiplier = 0.1;
+  private readonly executionGuards = new Map<string, ExecutionGuardState>();
+  private rlExecutionGuards = {
+    confidence: 0,
+    minHold: 0,
+    flipCooldown: 0,
+    lowStrength: 0,
+    confidenceTriggered: 0,
+    actionsBeforeGuards: 0,
+    actionsAfterGuards: 0,
+  };
+  private rlQGapSamples: number[] = [];
+  private shadowGateStatus: ShadowGateStatus = { passed: false, reason: 'not evaluated' };
+  private paperSanityStatus: PaperSanityStatus = { passed: true, reason: 'not evaluated', netPnlUsd: 0, maxDrawdownPct: 0, criticalAlertsCount: 0 };
+  private runtimeStartedAt = Date.now();
 
   constructor(
     private readonly db: StateDb,
@@ -68,7 +100,7 @@ export class TradingEngine {
       maxDailyLossUsd: config.risk.maxDailyLossUsd,
       maxDrawdownPct: config.risk.maxDrawdownPct,
       maxOrdersPerMinute: config.risk.maxOrdersPerMinute,
-      cooldownLossStreak: config.risk.cooldownLossStreak,
+      maxTurnoverPerHour: config.risk.maxTurnoverPerHour,
     });
     this.rollout = new RolloutPolicy({
       requestedMode: config.rollout.mode,
@@ -80,6 +112,7 @@ export class TradingEngine {
 
   async start(): Promise<void> {
     if (this.started) return;
+    this.runtimeStartedAt = Date.now();
     await this.orderManager.reconcile();
     this.feed.on('candle', (candle: Candle) => {
       this.candleQueue = this.candleQueue
@@ -113,9 +146,33 @@ export class TradingEngine {
         profitFactor,
       },
       tinyLiveRiskMultiplier: this.tinyLiveRiskMultiplier,
+      paperSanity: this.paperSanityStatus,
       backtestGate: {
         passed: this.backtestGatePassed,
         reason: this.backtestGateReason,
+      },
+      shadowGate: this.shadowGateStatus,
+      rlExecutionGuards: {
+        ...this.rlExecutionGuards,
+        confidenceGateEnabled: this.config.rl.confidenceGateEnabled,
+        confidenceQGap: this.config.rl.confidenceQGap,
+        effectiveConfidenceQGap: this.resolveConfidenceQGapThreshold(),
+        confidenceQGapAdaptiveEnabled: this.config.rl.confidenceQGapAdaptiveEnabled,
+        confidenceQGapAdaptiveQuantile: this.config.rl.confidenceQGapAdaptiveQuantile,
+        confidenceQGapAdaptiveScale: this.config.rl.confidenceQGapAdaptiveScale,
+        confidenceQGapMin: this.config.rl.confidenceQGapMin,
+        minSignalStrength: this.config.rl.minSignalStrength,
+        holdFlattenEnabled: this.config.rl.holdFlattenEnabled,
+        minHoldBars: this.config.rl.minHoldBars,
+        flipCooldownBars: this.config.rl.flipCooldownBars,
+        maxPositionBars: this.config.rl.maxPositionBars,
+      },
+      lossStreakCooldown: {
+        active: this.lossCooldownUntilMs > Date.now(),
+        remainingMs: Math.max(0, this.lossCooldownUntilMs - Date.now()),
+        recentLossStreak: this.recentLossStreak,
+        streakThreshold: this.config.risk.cooldownLossStreak,
+        cooldownMinutes: this.config.risk.cooldownLossMinutes,
       },
       recentAlerts: this.alerts.slice(0, 20),
     };
@@ -153,12 +210,17 @@ export class TradingEngine {
     }
   }
 
+  setShadowGate(status: ShadowGateStatus): void {
+    this.shadowGateStatus = status;
+  }
+
   private async onCandle(candle: Candle): Promise<void> {
     if (!this.started) return;
     if (candle.timeframe !== '1m') {
       this.refreshUnrealized();
       return;
     }
+    const guard = this.updateExecutionGuard(candle);
 
     const shouldBlockForBacktestGate = !this.backtestGatePassed && this.rollout.getStage() === 'tiny_live';
     if (shouldBlockForBacktestGate) {
@@ -189,26 +251,78 @@ export class TradingEngine {
       return;
     }
 
-    if (signal.action === 'hold') {
+    const currentPosition = this.positionSide(signal.symbol);
+    const positionAgeBars = currentPosition === 0 ? 0 : Math.max(0, guard.step - guard.positionEntryStep);
+    const flattenOnRlHold =
+      signal.policy === 'rl' &&
+      this.config.rl.holdFlattenEnabled &&
+      signal.action === 'hold' &&
+      currentPosition !== 0 &&
+      signal.strength >= this.config.rl.minSignalStrength;
+    const flattenOnMaxAge =
+      signal.policy === 'rl' &&
+      currentPosition !== 0 &&
+      this.config.rl.maxPositionBars > 0 &&
+      positionAgeBars >= this.config.rl.maxPositionBars;
+    const forceFlatten = flattenOnRlHold || flattenOnMaxAge;
+    if (signal.action === 'hold' && !forceFlatten) {
       this.snapshotEquity(candle.closeTime);
       return;
     }
+    const executionSide: 'buy' | 'sell' = forceFlatten
+      ? currentPosition > 0 ? 'sell' : 'buy'
+      : signal.action === 'buy' ? 'buy' : 'sell';
+
+    const isRlSignal = signal.policy === 'rl';
+    let rlGuardDecision: { allowed: boolean; reason: string; turnover: number } | null = null;
+    if (isRlSignal && !forceFlatten) {
+      rlGuardDecision = this.applyRlExecutionGuards(signal, guard);
+      if (!rlGuardDecision.allowed) {
+        this.audit('rl_execution_guard_blocked', {
+          symbol: signal.symbol,
+          action: signal.action,
+          reason: rlGuardDecision.reason,
+          turnover: rlGuardDecision.turnover,
+          qGap: signal.qGap ?? null,
+        });
+        this.snapshotEquity(candle.closeTime);
+        return;
+      }
+    }
 
     this.pruneOrderRateWindow();
+    this.pruneTurnoverWindow();
     const equity = this.equityUsd();
-    const riskDecision = this.risk.check(signal, {
-      equityUsd: equity,
-      peakEquityUsd: this.peakEquityUsd,
-      dailyPnlUsd: this.realizedPnlUsd - this.dayRealizedBaseline,
-      recentLossStreak: this.recentLossStreak,
-      ordersLastMinute: this.orderTimes.length,
-      killSwitch: this.killSwitch.status().enabled,
-    });
+    const desiredPosition = forceFlatten ? 0 : executionSide === 'buy' ? 1 : -1;
+    const turnoverForSignal = forceFlatten
+      ? Math.abs(currentPosition)
+      : rlGuardDecision?.turnover ?? Math.abs(desiredPosition - currentPosition);
+    const turnoverLastHour = this.turnoverEvents.reduce((sum, item) => sum + item.units, 0);
+    const nowMs = Date.now();
+    if (this.lossCooldownUntilMs > 0 && nowMs >= this.lossCooldownUntilMs) {
+      this.lossCooldownUntilMs = 0;
+    }
+    const riskDecision = forceFlatten
+      ? { allowed: true, reason: flattenOnMaxAge ? 'rl max age flatten' : 'rl hold flatten' }
+      : this.risk.check(signal, {
+        equityUsd: equity,
+        peakEquityUsd: this.peakEquityUsd,
+        dailyPnlUsd: this.realizedPnlUsd - this.dayRealizedBaseline,
+        recentLossStreak: this.recentLossStreak,
+        lossCooldownUntilMs: this.lossCooldownUntilMs,
+        nowMs,
+        ordersLastMinute: this.orderTimes.length,
+        turnoverLastHour,
+        turnoverForSignal,
+        killSwitch: this.killSwitch.status().enabled,
+      });
     this.audit('risk_decision', {
       signal,
       allowed: riskDecision.allowed,
       reason: riskDecision.reason,
       maxSizeUsd: riskDecision.maxSizeUsd ?? null,
+      turnoverLastHour,
+      turnoverForSignal,
     });
 
     if (!riskDecision.allowed) {
@@ -219,8 +333,9 @@ export class TradingEngine {
       return;
     }
 
-    const sizeUsd = (riskDecision.maxSizeUsd ?? 0) * Math.max(0.2, signal.strength);
-    const qty = Number(((sizeUsd * this.getRiskMultiplier()) / candle.close).toFixed(6));
+    const qty = forceFlatten
+      ? Number(Math.abs(this.lookupPositionQuantity(signal.symbol)).toFixed(6))
+      : Number((((riskDecision.maxSizeUsd ?? 0) * Math.max(0.2, signal.strength) * this.getRiskMultiplier()) / candle.close).toFixed(6));
     if (!Number.isFinite(qty) || qty <= 0) {
       this.snapshotEquity(candle.closeTime);
       return;
@@ -228,7 +343,7 @@ export class TradingEngine {
 
     const orderRequest = {
       symbol: signal.symbol,
-      side: signal.action,
+      side: executionSide,
       quantity: qty,
       clientOrderId: randomUUID(),
       requestedAt: Date.now(),
@@ -274,6 +389,9 @@ export class TradingEngine {
       const realizedPnlUsd = result.realizedPnlUsd ?? 0;
       const netTradePnlUsd = realizedPnlUsd - feesUsd;
       this.orderTimes.push(Date.now());
+      if (turnoverForSignal > 0) {
+        this.turnoverEvents.push({ ts: Date.now(), units: turnoverForSignal });
+      }
       this.consumeFillCashflow(orderRequest.side, result.avgFillPrice ?? candle.close, filledQuantity, feesUsd);
       this.realizedPnlUsd += netTradePnlUsd;
       this.paperMetrics.netPnlUsd += netTradePnlUsd;
@@ -281,13 +399,16 @@ export class TradingEngine {
         this.paperMetrics.wins += 1;
         this.paperMetrics.grossProfitUsd += netTradePnlUsd;
         this.recentLossStreak = 0;
+        this.lossCooldownUntilMs = 0;
       } else if (netTradePnlUsd < 0) {
         this.paperMetrics.losses += 1;
         this.paperMetrics.grossLossUsd += Math.abs(netTradePnlUsd);
         this.recentLossStreak += 1;
+        this.activateLossStreakCooldown();
       }
       this.paperMetrics.trades += 1;
       this.refreshUnrealized();
+      this.syncExecutionGuardPosition(signal.symbol, guard);
       this.evaluateRollout();
       this.snapshotEquity(candle.closeTime);
     } catch (error) {
@@ -308,7 +429,12 @@ export class TradingEngine {
   }
 
   private evaluateRollout(): void {
-    const decision = this.rollout.evaluate(this.getPaperWindowMetrics());
+    const paperSanity = this.computePaperSanity();
+    this.paperSanityStatus = paperSanity;
+    const decision = this.rollout.evaluate(this.getPaperWindowMetrics(), {
+      paperSanityPassed: paperSanity.passed,
+      shadowGatePassed: this.shadowGateStatus.passed,
+    });
     if (decision.stage === 'tiny_live' && this.canIncreaseTinyRisk()) {
       this.tinyLiveRiskMultiplier = Math.min(0.5, this.tinyLiveRiskMultiplier + 0.05);
     }
@@ -359,8 +485,187 @@ export class TradingEngine {
     }
   }
 
+  private pruneTurnoverWindow(): void {
+    const threshold = Date.now() - 3_600_000;
+    while (this.turnoverEvents.length > 0 && this.turnoverEvents[0].ts < threshold) {
+      this.turnoverEvents.shift();
+    }
+  }
+
+  private positionSide(symbol: string): -1 | 0 | 1 {
+    const position = this.db.getPositions().find(item => item.symbol === symbol);
+    if (!position) return 0;
+    if (position.quantity > 0) return 1;
+    if (position.quantity < 0) return -1;
+    return 0;
+  }
+
+  private lookupPositionQuantity(symbol: string): number {
+    const position = this.db.getPositions().find(item => item.symbol === symbol);
+    return position?.quantity ?? 0;
+  }
+
+  private getOrCreateExecutionGuard(symbol: string): ExecutionGuardState {
+    const existing = this.executionGuards.get(symbol);
+    if (existing) return existing;
+    const guard: ExecutionGuardState = {
+      step: 0,
+      position: 0,
+      positionEntryStep: 0,
+      lastTurnoverStep: 0,
+      lastFlipStep: 0,
+    };
+    this.executionGuards.set(symbol, guard);
+    return guard;
+  }
+
+  private updateExecutionGuard(candle: Candle): ExecutionGuardState {
+    const guard = this.getOrCreateExecutionGuard(candle.symbol);
+    guard.step += 1;
+    this.syncExecutionGuardPosition(candle.symbol, guard);
+    return guard;
+  }
+
+  private syncExecutionGuardPosition(symbol: string, guard?: ExecutionGuardState): void {
+    const state = guard ?? this.executionGuards.get(symbol);
+    if (!state) return;
+    const dbPosition = this.positionSide(symbol);
+    if (dbPosition === state.position) return;
+    const prev = state.position;
+    state.position = dbPosition;
+    state.positionEntryStep = state.step;
+    state.lastTurnoverStep = state.step;
+    if (Math.abs(prev - dbPosition) === 2) {
+      state.lastFlipStep = state.step;
+    }
+  }
+
+  private applyRlExecutionGuards(signal: Signal, guard: ExecutionGuardState): { allowed: boolean; reason: string; turnover: number } {
+    const desiredPosition = signal.action === 'buy' ? 1 : -1;
+    const turnover = Math.abs(desiredPosition - guard.position);
+    if (turnover <= 0) {
+      return { allowed: false, reason: 'rl no-op', turnover };
+    }
+    this.rlExecutionGuards.actionsBeforeGuards += 1;
+    this.recordRlQGapSample(signal.qGap);
+
+    if (guard.position === 0 && signal.strength < this.config.rl.minSignalStrength) {
+      this.rlExecutionGuards.lowStrength += 1;
+      return { allowed: false, reason: 'rl low strength', turnover };
+    }
+
+    const positionAge = guard.position === 0 ? 0 : Math.max(0, guard.step - guard.positionEntryStep);
+    const minHold = Math.max(0, Math.floor(this.config.rl.minHoldBars));
+    if (guard.position !== 0 && positionAge < minHold) {
+      this.rlExecutionGuards.minHold += 1;
+      return { allowed: false, reason: 'rl min hold', turnover };
+    }
+
+    const flipCooldown = Math.max(0, Math.floor(this.config.rl.flipCooldownBars));
+    if (guard.lastFlipStep > 0 && guard.step - guard.lastFlipStep < flipCooldown) {
+      this.rlExecutionGuards.flipCooldown += 1;
+      return { allowed: false, reason: 'rl flip cooldown', turnover };
+    }
+
+    const qGap = typeof signal.qGap === 'number' ? signal.qGap : Number.NaN;
+    const confidenceQGap = this.resolveConfidenceQGapThreshold();
+    const confidenceGateTriggered =
+      this.config.rl.confidenceGateEnabled &&
+      Number.isFinite(qGap) &&
+      qGap < confidenceQGap;
+    if (confidenceGateTriggered) {
+      this.rlExecutionGuards.confidenceTriggered += 1;
+      this.rlExecutionGuards.confidence += 1;
+      return { allowed: false, reason: 'rl confidence gate', turnover };
+    }
+
+    this.rlExecutionGuards.actionsAfterGuards += 1;
+    return { allowed: true, reason: 'rl execution guard pass', turnover };
+  }
+
+  private recordRlQGapSample(value: number | undefined): void {
+    if (!Number.isFinite(value)) return;
+    this.rlQGapSamples.push(value as number);
+    if (this.rlQGapSamples.length > 2000) {
+      this.rlQGapSamples.splice(0, this.rlQGapSamples.length - 2000);
+    }
+  }
+
+  private resolveConfidenceQGapThreshold(): number {
+    const base = Math.max(0, this.config.rl.confidenceQGap);
+    if (!this.config.rl.confidenceQGapAdaptiveEnabled) return base;
+    const minThreshold = Math.max(0, this.config.rl.confidenceQGapMin);
+    if (this.rlQGapSamples.length < 12) {
+      const warmupThreshold = base * 0.35;
+      return clamp(warmupThreshold, minThreshold, base);
+    }
+
+    const sorted = [...this.rlQGapSamples].sort((a, b) => a - b);
+    const quantile = clamp(this.config.rl.confidenceQGapAdaptiveQuantile, 0.35, 0.95);
+    const idx = Math.floor((sorted.length - 1) * quantile);
+    const qValue = sorted[Math.max(0, Math.min(sorted.length - 1, idx))] ?? base;
+    const scaled = qValue * Math.max(0.1, this.config.rl.confidenceQGapAdaptiveScale);
+    const adaptive = Math.max(minThreshold, scaled);
+    let threshold = Math.min(base, adaptive);
+
+    const before = this.rlExecutionGuards.actionsBeforeGuards;
+    if (before >= 20) {
+      const passRate = this.rlExecutionGuards.actionsAfterGuards / Math.max(1, before);
+      const targetPassRate = 0.2;
+      if (passRate < targetPassRate) {
+        const relaxFactor = Math.max(0.2, passRate / targetPassRate);
+        threshold *= relaxFactor;
+      }
+    }
+
+    return clamp(threshold, minThreshold, base);
+  }
+
+  private computePaperSanity(): PaperSanityStatus {
+    const netPnlUsd = this.realizedPnlUsd + this.unrealizedPnlUsd;
+    const currentEquity = this.equityUsd();
+    const peakForCalc = Math.max(this.peakEquityUsd, currentEquity);
+    const currentDrawdownPct = peakForCalc <= 0 ? 0 : ((peakForCalc - currentEquity) / peakForCalc) * 100;
+    const maxDrawdownPct = Math.max(this.paperMetrics.maxDrawdownPct, currentDrawdownPct);
+    const criticalAlerts = this.alerts.filter(alert =>
+      alert.level === 'critical' && alert.timestamp >= this.runtimeStartedAt,
+    );
+    const minNetPnlUsd = this.config.rollout.paperSanityMinNetPnlUsd;
+    const maxDrawdownLimitRaw = this.config.rollout.paperSanityMaxDrawdownPct;
+    const maxDrawdownLimit = maxDrawdownLimitRaw > 1 ? maxDrawdownLimitRaw : maxDrawdownLimitRaw * 100;
+    const minTradesBeforeNetPnlGate = 12;
+    const netPnlGateActive = this.paperMetrics.trades >= minTradesBeforeNetPnlGate;
+    const netPnlPassed = !netPnlGateActive || netPnlUsd >= minNetPnlUsd;
+    const passed = netPnlPassed && maxDrawdownPct <= maxDrawdownLimit && criticalAlerts.length === 0;
+    const reason = passed
+      ? 'ok'
+      : criticalAlerts.length > 0
+        ? 'critical_alerts'
+        : maxDrawdownPct > maxDrawdownLimit
+          ? 'max_drawdown'
+          : 'net_pnl';
+    return {
+      passed,
+      reason,
+      netPnlUsd,
+      maxDrawdownPct,
+      criticalAlertsCount: criticalAlerts.length,
+    };
+  }
+
   private equityUsd(): number {
-    return this.cashUsd + this.unrealizedPnlUsd;
+    return this.cashUsd + this.positionMarketValueUsd();
+  }
+
+  private positionMarketValueUsd(): number {
+    const positions = this.db.getPositions();
+    let value = 0;
+    for (const position of positions) {
+      const mark = this.feed.getLastPrice(position.symbol);
+      if (!mark) continue;
+      value += position.quantity * mark;
+    }
+    return value;
   }
 
   private drawdownPct(equity: number): number {
@@ -397,6 +702,22 @@ export class TradingEngine {
     this.dayKey = next;
     this.dayRealizedBaseline = this.realizedPnlUsd;
     this.recentLossStreak = 0;
+    this.lossCooldownUntilMs = 0;
+  }
+
+  private activateLossStreakCooldown(): void {
+    if (this.config.risk.cooldownLossStreak <= 0 || this.config.risk.cooldownLossMinutes <= 0) return;
+    if (this.recentLossStreak < this.config.risk.cooldownLossStreak) return;
+    const nowMs = Date.now();
+    if (this.lossCooldownUntilMs > nowMs) return;
+    const cooldownMs = Math.floor(this.config.risk.cooldownLossMinutes * 60_000);
+    if (cooldownMs <= 0) return;
+    this.lossCooldownUntilMs = nowMs + cooldownMs;
+    this.raiseAlert('warning', 'risk_limit', 'loss streak cooldown enabled', {
+      recentLossStreak: this.recentLossStreak,
+      cooldownLossStreak: this.config.risk.cooldownLossStreak,
+      cooldownLossMinutes: this.config.risk.cooldownLossMinutes,
+    });
   }
 
   private currentDayKey(): string {
@@ -441,3 +762,5 @@ const computeProfitFactor = (grossProfitUsd: number, grossLossUsd: number): numb
   }
   return Math.min(50, grossProfitUsd / grossLossUsd);
 };
+
+const clamp = (value: number, min: number, max: number): number => Math.max(min, Math.min(max, value));

@@ -1,0 +1,8 @@
+{
+  "fromPort": 8080,
+  "toPort": 8640,
+  "killMode": false,
+  "before": [],
+  "actions": [],
+  "after": []
+}

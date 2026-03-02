@@ -1,0 +1,179 @@
+{
+  "statusFile": "c:\\Users\\Nitro\\Desktop\\tardes\\repo_hydra_audit\\debug\\live-paper-status-index1-2026-03-02T07-06-31-551Z.jsonl",
+  "samples": {
+    "total": 45,
+    "usable": 44,
+    "firstTs": "2026-03-02T07:07:02.514Z",
+    "lastTs": "2026-03-02T07:28:33.133Z",
+    "durationMin": 21.510316666666668,
+    "healthErrors": 1
+  },
+  "tradingFromSamples": {
+    "startTrades": 0,
+    "endTrades": 33,
+    "tradesDelta": 33,
+    "estimatedTradesPerHour": 92.04885407699716,
+    "startNetPnlUsd": 0,
+    "endNetPnlUsd": -2.816873762211785,
+    "tradeChangePoints": [
+      {
+        "ts": "2026-03-02T07:08:02.572Z",
+        "from": 0,
+        "to": 2,
+        "delta": 2
+      },
+      {
+        "ts": "2026-03-02T07:09:02.605Z",
+        "from": 2,
+        "to": 5,
+        "delta": 3
+      },
+      {
+        "ts": "2026-03-02T07:09:32.611Z",
+        "from": 5,
+        "to": 7,
+        "delta": 2
+      },
+      {
+        "ts": "2026-03-02T07:10:02.621Z",
+        "from": 7,
+        "to": 9,
+        "delta": 2
+      },
+      {
+        "ts": "2026-03-02T07:10:32.642Z",
+        "from": 9,
+        "to": 12,
+        "delta": 3
+      },
+      {
+        "ts": "2026-03-02T07:14:32.757Z",
+        "from": 12,
+        "to": 16,
+        "delta": 4
+      },
+      {
+        "ts": "2026-03-02T07:15:02.768Z",
+        "from": 16,
+        "to": 17,
+        "delta": 1
+      },
+      {
+        "ts": "2026-03-02T07:16:02.797Z",
+        "from": 17,
+        "to": 18,
+        "delta": 1
+      },
+      {
+        "ts": "2026-03-02T07:16:32.809Z",
+        "from": 18,
+        "to": 19,
+        "delta": 1
+      },
+      {
+        "ts": "2026-03-02T07:18:32.886Z",
+        "from": 19,
+        "to": 20,
+        "delta": 1
+      },
+      {
+        "ts": "2026-03-02T07:19:02.894Z",
+        "from": 20,
+        "to": 21,
+        "delta": 1
+      },
+      {
+        "ts": "2026-03-02T07:25:33.069Z",
+        "from": 21,
+        "to": 22,
+        "delta": 1
+      },
+      {
+        "ts": "2026-03-02T07:26:03.081Z",
+        "from": 22,
+        "to": 23,
+        "delta": 1
+      },
+      {
+        "ts": "2026-03-02T07:26:33.099Z",
+        "from": 23,
+        "to": 27,
+        "delta": 4
+      },
+      {
+        "ts": "2026-03-02T07:27:03.109Z",
+        "from": 27,
+        "to": 29,
+        "delta": 2
+      },
+      {
+        "ts": "2026-03-02T07:27:33.115Z",
+        "from": 29,
+        "to": 30,
+        "delta": 1
+      },
+      {
+        "ts": "2026-03-02T07:28:03.125Z",
+        "from": 30,
+        "to": 31,
+        "delta": 1
+      },
+      {
+        "ts": "2026-03-02T07:28:33.133Z",
+        "from": 31,
+        "to": 33,
+        "delta": 2
+      }
+    ],
+    "aggregatedRiskReasons": {
+      "risk checks passed": 248
+    }
+  },
+  "liveRuntime": {
+    "fetchError": null,
+    "stage": "paper",
+    "paperMetrics": {
+      "trades": 35,
+      "wins": 1,
+      "losses": 34,
+      "grossProfitUsd": 0.03756637567988082,
+      "grossLossUsd": 3.046411608263037,
+      "netPnlUsd": -3.0088452325831563,
+      "maxDrawdownPct": 1.1346235218736602,
+      "winRate": 0.02857142857142857,
+      "profitFactor": 0.012331352591352526
+    },
+    "rlExecutionGuards": {
+      "confidence": 0,
+      "minHold": 67,
+      "flipCooldown": 0,
+      "confidenceTriggered": 0,
+      "actionsBeforeGuards": 105,
+      "actionsAfterGuards": 38,
+      "confidenceGateEnabled": false,
+      "confidenceQGap": 0.008,
+      "minHoldBars": 12,
+      "flipCooldownBars": 8
+    },
+    "killSwitch": {
+      "enabled": false,
+      "reason": ""
+    },
+    "orderCount": 38,
+    "orderSides": {
+      "buy": 18,
+      "sell": 20
+    },
+    "signalActions": {
+      "hold": 1225,
+      "buy": 85,
+      "sell": 20
+    },
+    "guardBlocks": {
+      "rl min hold": 67
+    },
+    "riskDecisionBreakdown": {
+      "risk checks passed | allowed=true": 38
+    }
+  }
+}

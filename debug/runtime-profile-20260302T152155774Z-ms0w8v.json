@@ -1,0 +1,26 @@
+{
+  "profileId": "20260302T152155774Z-ms0w8v",
+  "startedAt": "2026-03-02T15:21:55.776Z",
+  "endedAt": "2026-03-02T15:26:36.746Z",
+  "exitCode": 1,
+  "signal": null,
+  "baseUrl": "http://127.0.0.1:8461",
+  "port": 8461,
+  "dbPath": "debug/db/trader-20260302T152155774Z-ms0w8v.db",
+  "reportPath": "debug/shadow-report-20260302T152155774Z-ms0w8v.json",
+  "cleanupDb": false,
+  "env": {
+    "MARKET_MODE": null,
+    "ROLLOUT_MODE": null,
+    "PAPER_ONLY": null,
+    "MOCK_CLOCK_OFFSET_MINUTES": null,
+    "RL_CONFIDENCE_GATE_ENABLED": null,
+    "RL_CONFIDENCE_Q_GAP": null,
+    "RL_MIN_HOLD_BARS": null,
+    "RL_FLIP_COOLDOWN_BARS": null,
+    "TARGET_TRADES": null,
+    "POLL_MS": null,
+    "MAX_WAIT_MS": null,
+    "RL_SHADOW_GATE_REQUIRED_TIER": null
+  }
+}

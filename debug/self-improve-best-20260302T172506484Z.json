@@ -1,0 +1,38 @@
+{
+  "score": 1403.7222059771575,
+  "candidate": {
+    "RL_CONFIDENCE_Q_GAP": "0.008",
+    "RL_CONFIDENCE_Q_GAP_ADAPTIVE_SCALE": "0.7",
+    "RL_CONFIDENCE_Q_GAP_ADAPTIVE_QUANTILE": "0.55",
+    "RL_MIN_HOLD_BARS": "2",
+    "RL_FLIP_COOLDOWN_BARS": "1",
+    "RL_MAX_POSITION_BARS": "6",
+    "MAX_ORDERS_PER_MINUTE": "40",
+    "RL_SHADOW_GATE_MIN_NET_PNL_USD": "-1"
+  },
+  "summary": {
+    "iteration": 2,
+    "score": 1403.7222059771575,
+    "exitCode": 0,
+    "overallPassed": true,
+    "gatePassed": true,
+    "paperSanityPassed": true,
+    "rlTrades": 1,
+    "rlNetPnlUsd": -0.37629531678612693,
+    "rlMaxDrawdownPct": 0.003762953167861269,
+    "paperNetPnlUsd": -0.1825619637680047,
+    "paperMaxDrawdownPct": 0.0019386790376847785,
+    "candidate": {
+      "RL_CONFIDENCE_Q_GAP": "0.008",
+      "RL_CONFIDENCE_Q_GAP_ADAPTIVE_SCALE": "0.7",
+      "RL_CONFIDENCE_Q_GAP_ADAPTIVE_QUANTILE": "0.55",
+      "RL_MIN_HOLD_BARS": "2",
+      "RL_FLIP_COOLDOWN_BARS": "1",
+      "RL_MAX_POSITION_BARS": "6",
+      "MAX_ORDERS_PER_MINUTE": "40",
+      "RL_SHADOW_GATE_MIN_NET_PNL_USD": "-1"
+    },
+    "reportPath": "debug/shadow-report-self-improve-20260302T172506484Z-i02.json",
+    "readError": null
+  }
+}

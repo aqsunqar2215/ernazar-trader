@@ -25,6 +25,8 @@ export class AppRuntime {
   private readonly paperBroker = new PaperBroker(this.db, this.logger, {
     feeBps: config.execution.feeBps,
     slippageBps: config.execution.slippageBps,
+    rejectRate: 0,
+    partialFillRate: 0,
   });
   private readonly liveBroker = new LiveBroker(this.logger, {
     enabled: config.rollout.enableLiveOrders && !config.execution.paperOnly,
@@ -138,6 +140,8 @@ export class AppRuntime {
   private startShadowGuardMonitor(): void {
     this.shadowGuardTimer = setInterval(() => {
       const status = this.rlShadow.getStatus();
+      const gate = this.mlService.evaluateShadowGate(status);
+      this.tradingEngine.setShadowGate(gate);
       const result = this.mlService.checkShadowGuard(status);
       if (result && (result as Record<string, unknown>).rolledBack) {
         this.logger.error('shadow guard triggered champion rollback', result);

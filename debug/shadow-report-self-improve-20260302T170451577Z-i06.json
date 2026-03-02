@@ -1,0 +1,463 @@
+{
+  "baseUrl": "http://127.0.0.1:8652",
+  "runtimeMode": "spawned",
+  "targetTrades": 1,
+  "reachedTarget": true,
+  "elapsedMs": 96329,
+  "maxWaitMs": 120000,
+  "gateTimeoutMs": null,
+  "runtimeGateStale": true,
+  "gate": {
+    "passed": true,
+    "reason": "pass",
+    "kpi": {
+      "tradesPerMinute": 0.6229235880398671,
+      "profitFactor": 50,
+      "netPnlUsd": -0.26897958703921176,
+      "maxDrawdownPct": 0.0026897958703921174
+    },
+    "limits": {
+      "tradesPerMinute": 4,
+      "profitFactor": 0,
+      "netPnlUsd": -0.5,
+      "maxDrawdownPct": 0.05
+    }
+  },
+  "paperSanity": {
+    "passed": true,
+    "reason": "ok",
+    "netPnlUsd": -0.23319328713200405,
+    "maxDrawdownPct": 0.0023319328713296275,
+    "criticalAlertsCount": 0
+  },
+  "overallPassed": true,
+  "alertWindow": {
+    "startMs": 1772471731834,
+    "endMs": 1772471731842,
+    "startIso": "2026-03-02T17:15:31.834Z",
+    "endIso": "2026-03-02T17:15:31.842Z"
+  },
+  "criticalAlerts": [],
+  "final": {
+    "ts": "2026-03-02T17:15:31.835Z",
+    "rlTrades": 1,
+    "rlWinRate": 1,
+    "rlProfitFactor": 50,
+    "rlNetPnlUsd": -0.26897958703921176,
+    "rlMaxDrawdownPct": 0.0026897958703921174,
+    "rlQGapStats": {
+      "p50": 0.005467430279203878,
+      "p75": 0.006706196681163998,
+      "p90": 0.009014418470830135
+    },
+    "rlRegimeStats": null,
+    "runtimeStage": "paper",
+    "runtimePaperTrades": 4,
+    "runtimePaperProfitFactor": 0
+  },
+  "guardBlocks": {
+    "confidence": 2,
+    "minHold": 0,
+    "flipCooldown": 0,
+    "lowStrength": 0,
+    "confidenceTriggered": 2,
+    "total": 2,
+    "actionsBeforeGuards": 6,
+    "actionsAfterGuards": 3,
+    "confidenceGateEnabled": true,
+    "confidenceQGap": 0.01,
+    "effectiveConfidenceQGap": 0.004373944223363103,
+    "confidenceQGapAdaptiveEnabled": true,
+    "confidenceQGapAdaptiveQuantile": 0.55,
+    "confidenceQGapAdaptiveScale": 0.8,
+    "confidenceQGapMin": 0.0008,
+    "minSignalStrength": 0
+  },
+  "sampleStats": {
+    "firstTradeTs": "2026-03-02T17:15:31.834Z",
+    "firstTradeRlTrades": 1,
+    "maxObservedDrawdownPct": 0.0026897958703921174,
+    "minObservedNetPnlUsd": -0.26897958703921176,
+    "maxObservedNetPnlUsd": 0,
+    "elapsedMinutes": 1.6053333333333333,
+    "tradesPerMinute": 0.6229235880398671
+  },
+  "samplesCount": 33,
+  "lastSamples": [
+    {
+      "ts": "2026-03-02T17:15:19.801Z",
+      "rlTrades": 0,
+      "rlWinRate": 0,
+      "rlProfitFactor": 0,
+      "rlNetPnlUsd": -0.1250570870579395,
+      "rlMaxDrawdownPct": 0.001250570870579395,
+      "rlQGapStats": {
+        "p50": 0.004708593606549405,
+        "p75": 0.005529314368881891,
+        "p90": 0.005713572516306359
+      },
+      "rlRegimeStats": null,
+      "runtimeStage": "paper",
+      "runtimePaperTrades": 2,
+      "runtimePaperProfitFactor": 0
+    },
+    {
+      "ts": "2026-03-02T17:15:22.806Z",
+      "rlTrades": 0,
+      "rlWinRate": 0,
+      "rlProfitFactor": 0,
+      "rlNetPnlUsd": -0.22506292463003774,
+      "rlMaxDrawdownPct": 0.0022506292463003773,
+      "rlQGapStats": {
+        "p50": 0.005467430279203878,
+        "p75": 0.005713572516306359,
+        "p90": 0.00791111510188558
+      },
+      "rlRegimeStats": null,
+      "runtimeStage": "paper",
+      "runtimePaperTrades": 2,
+      "runtimePaperProfitFactor": 0
+    },
+    {
+      "ts": "2026-03-02T17:15:25.810Z",
+      "rlTrades": 0,
+      "rlWinRate": 0,
+      "rlProfitFactor": 0,
+      "rlNetPnlUsd": -0.2662312315842428,
+      "rlMaxDrawdownPct": 0.0026623123158424277,
+      "rlQGapStats": {
+        "p50": 0.005467430279203878,
+        "p75": 0.006681513566695649,
+        "p90": 0.00791111510188558
+      },
+      "rlRegimeStats": null,
+      "runtimeStage": "paper",
+      "runtimePaperTrades": 2,
+      "runtimePaperProfitFactor": 0
+    },
+    {
+      "ts": "2026-03-02T17:15:28.821Z",
+      "rlTrades": 0,
+      "rlWinRate": 0,
+      "rlProfitFactor": 0,
+      "rlNetPnlUsd": -0.24396534271909331,
+      "rlMaxDrawdownPct": 0.002439653427190933,
+      "rlQGapStats": {
+        "p50": 0.005467430279203878,
+        "p75": 0.006681513566695649,
+        "p90": 0.009014418470830135
+      },
+      "rlRegimeStats": null,
+      "runtimeStage": "paper",
+      "runtimePaperTrades": 3,
+      "runtimePaperProfitFactor": 0
+    },
+    {
+      "ts": "2026-03-02T17:15:31.834Z",
+      "rlTrades": 1,
+      "rlWinRate": 1,
+      "rlProfitFactor": 50,
+      "rlNetPnlUsd": -0.26897958703921176,
+      "rlMaxDrawdownPct": 0.0026897958703921174,
+      "rlQGapStats": {
+        "p50": 0.005467430279203878,
+        "p75": 0.006706196681163998,
+        "p90": 0.009014418470830135
+      },
+      "rlRegimeStats": null,
+      "runtimeStage": "paper",
+      "runtimePaperTrades": 4,
+      "runtimePaperProfitFactor": 0
+    }
+  ],
+  "runtimeData": {
+    "alertsCount": 0,
+    "auditEventsCount": 112,
+    "fillsCount": 6,
+    "ordersCount": 4,
+    "equityPoints": 3,
+    "alertsTail": [],
+    "auditTail": [
+      {
+        "ts": 1772471655116,
+        "type": "signal_generated",
+        "severity": null,
+        "symbol": null,
+        "detail": null
+      },
+      {
+        "ts": 1772471655113,
+        "type": "signal_generated",
+        "severity": null,
+        "symbol": null,
+        "detail": null
+      },
+      {
+        "ts": 1772471653112,
+        "type": "signal_generated",
+        "severity": null,
+        "symbol": null,
+        "detail": null
+      },
+      {
+        "ts": 1772471653109,
+        "type": "signal_generated",
+        "severity": null,
+        "symbol": null,
+        "detail": null
+      },
+      {
+        "ts": 1772471651131,
+        "type": "signal_generated",
+        "severity": null,
+        "symbol": null,
+        "detail": null
+      },
+      {
+        "ts": 1772471651128,
+        "type": "signal_generated",
+        "severity": null,
+        "symbol": null,
+        "detail": null
+      },
+      {
+        "ts": 1772471649114,
+        "type": "signal_generated",
+        "severity": null,
+        "symbol": null,
+        "detail": null
+      },
+      {
+        "ts": 1772471649111,
+        "type": "signal_generated",
+        "severity": null,
+        "symbol": null,
+        "detail": null
+      },
+      {
+        "ts": 1772471647113,
+        "type": "signal_generated",
+        "severity": null,
+        "symbol": null,
+        "detail": null
+      },
+      {
+        "ts": 1772471647109,
+        "type": "signal_generated",
+        "severity": null,
+        "symbol": null,
+        "detail": null
+      },
+      {
+        "ts": 1772471645137,
+        "type": "signal_generated",
+        "severity": null,
+        "symbol": null,
+        "detail": null
+      },
+      {
+        "ts": 1772471645134,
+        "type": "signal_generated",
+        "severity": null,
+        "symbol": null,
+        "detail": null
+      },
+      {
+        "ts": 1772471643257,
+        "type": "signal_generated",
+        "severity": null,
+        "symbol": null,
+        "detail": null
+      },
+      {
+        "ts": 1772471643252,
+        "type": "signal_generated",
+        "severity": null,
+        "symbol": null,
+        "detail": null
+      },
+      {
+        "ts": 1772471641128,
+        "type": "signal_generated",
+        "severity": null,
+        "symbol": null,
+        "detail": null
+      },
+      {
+        "ts": 1772471641125,
+        "type": "signal_generated",
+        "severity": null,
+        "symbol": null,
+        "detail": null
+      },
+      {
+        "ts": 1772471639512,
+        "type": "signal_generated",
+        "severity": null,
+        "symbol": null,
+        "detail": null
+      },
+      {
+        "ts": 1772471639509,
+        "type": "signal_generated",
+        "severity": null,
+        "symbol": null,
+        "detail": null
+      },
+      {
+        "ts": 1772471637127,
+        "type": "signal_generated",
+        "severity": null,
+        "symbol": null,
+        "detail": null
+      },
+      {
+        "ts": 1772471637124,
+        "type": "signal_generated",
+        "severity": null,
+        "symbol": null,
+        "detail": null
+      }
+    ]
+  },
+  "finalSnapshots": {
+    "rlStatus": {
+      "enabled": true,
+      "modelKind": "rl_linear_q",
+      "initialCapitalUsd": 10000,
+      "equityUsd": 9999.73102041296,
+      "netPnlUsd": -0.26897958703921176,
+      "totalCostsUsd": 0.27518535893293594,
+      "maxDrawdownPct": 0.0026897958703921174,
+      "trades": 1,
+      "tradesPerMinute": 82.98755186721992,
+      "startedAt": 1772471635278,
+      "elapsedMs": 723,
+      "firstTradeTs": 1772471731117,
+      "lastTradeTs": 1772471731117,
+      "winRate": 1,
+      "profitFactor": 50,
+      "qGapStats": {
+        "p50": 0.005467430279203878,
+        "p75": 0.006706196681163998,
+        "p90": 0.009014418470830135
+      },
+      "regimeStats": null,
+      "symbols": [
+        "BTCUSDT",
+        "ETHUSDT"
+      ],
+      "openPositions": [
+        {
+          "symbol": "ETHUSDT",
+          "side": "long",
+          "entryPrice": 2058.64,
+          "entryTs": 1772471700000
+        }
+      ],
+      "guardBlocks": {
+        "confidence": 2,
+        "minHold": 0,
+        "flipCooldown": 0,
+        "lowStrength": 0,
+        "confidenceTriggered": 2,
+        "total": 2,
+        "actionsBeforeGuards": 6,
+        "actionsAfterGuards": 3,
+        "confidenceGateEnabled": true,
+        "confidenceQGap": 0.01,
+        "effectiveConfidenceQGap": 0.004373944223363103,
+        "confidenceQGapAdaptiveEnabled": true,
+        "confidenceQGapAdaptiveQuantile": 0.55,
+        "confidenceQGapAdaptiveScale": 0.8,
+        "confidenceQGapMin": 0.0008,
+        "minSignalStrength": 0
+      }
+    },
+    "runtimeStatus": {
+      "stage": "paper",
+      "killSwitch": {
+        "enabled": false,
+        "reason": ""
+      },
+      "cashUsd": 9919.769787832867,
+      "equityUsd": 9999.783035992867,
+      "realizedPnlUsd": -0.23571983713199732,
+      "unrealizedPnlUsd": 0.0023264400000008963,
+      "drawdownPct": 0.0021696400713335606,
+      "paperMetrics": {
+        "trades": 4,
+        "wins": 0,
+        "losses": 4,
+        "grossProfitUsd": 0,
+        "grossLossUsd": 0.23571983713199732,
+        "netPnlUsd": -0.23571983713199732,
+        "maxDrawdownPct": 0.0023339339713311347,
+        "winRate": 0,
+        "profitFactor": 0
+      },
+      "tinyLiveRiskMultiplier": 0.1,
+      "paperSanity": {
+        "passed": true,
+        "reason": "ok",
+        "netPnlUsd": -0.23319328713200405,
+        "maxDrawdownPct": 0.0023319328713296275,
+        "criticalAlertsCount": 0
+      },
+      "backtestGate": {
+        "passed": false,
+        "reason": "failed gate (profitFactor/drawdown)"
+      },
+      "shadowGate": {
+        "passed": false,
+        "reason": "awaiting_trades",
+        "tier": 1,
+        "currentTier": 0,
+        "trades": 0,
+        "elapsedMs": 80058,
+        "kpi": {
+          "tradesPerMinute": 0,
+          "profitFactor": 0,
+          "netPnlUsd": 0,
+          "maxDrawdownPct": 0
+        },
+        "limits": {
+          "maxTradesPerMinute": 4,
+          "minProfitFactor": 0,
+          "minNetPnlUsd": -0.5,
+          "maxDrawdownPct": 0.05,
+          "timeoutMs": 86400000
+        }
+      },
+      "rlExecutionGuards": {
+        "confidence": 2,
+        "minHold": 0,
+        "flipCooldown": 0,
+        "lowStrength": 0,
+        "confidenceTriggered": 2,
+        "actionsBeforeGuards": 5,
+        "actionsAfterGuards": 3,
+        "confidenceGateEnabled": true,
+        "confidenceQGap": 0.01,
+        "effectiveConfidenceQGap": 0.0034999999999999996,
+        "confidenceQGapAdaptiveEnabled": true,
+        "confidenceQGapAdaptiveQuantile": 0.55,
+        "confidenceQGapAdaptiveScale": 0.8,
+        "confidenceQGapMin": 0.0008,
+        "minSignalStrength": 0,
+        "holdFlattenEnabled": false,
+        "minHoldBars": 3,
+        "flipCooldownBars": 0,
+        "maxPositionBars": 6
+      },
+      "lossStreakCooldown": {
+        "active": false,
+        "remainingMs": 0,
+        "recentLossStreak": 4,
+        "streakThreshold": 0,
+        "cooldownMinutes": 0
+      },
+      "recentAlerts": []
+    }
+  }
+}

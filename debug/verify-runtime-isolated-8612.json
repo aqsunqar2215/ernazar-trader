@@ -1,0 +1,141 @@
+{
+  "baseUrl": "http://127.0.0.1:8612",
+  "startPid": 25744,
+  "runtimeMode": "spawned",
+  "healthProbe": {
+    "ready": true,
+    "afterMs": 654,
+    "health": {
+      "status": "ok",
+      "service": "hydra-trader",
+      "uptimeMs": 220,
+      "wsClients": 0,
+      "trading": {
+        "stage": "paper",
+        "killSwitch": {
+          "enabled": false,
+          "reason": ""
+        },
+        "cashUsd": 10000,
+        "equityUsd": 10000,
+        "realizedPnlUsd": 0,
+        "unrealizedPnlUsd": 0,
+        "drawdownPct": 0,
+        "paperMetrics": {
+          "trades": 0,
+          "wins": 0,
+          "losses": 0,
+          "grossProfitUsd": 0,
+          "grossLossUsd": 0,
+          "netPnlUsd": 0,
+          "maxDrawdownPct": 0,
+          "winRate": 0,
+          "profitFactor": 0
+        },
+        "tinyLiveRiskMultiplier": 0.1,
+        "paperSanity": {
+          "passed": true,
+          "reason": "not evaluated",
+          "netPnlUsd": 0,
+          "maxDrawdownPct": 0,
+          "criticalAlertsCount": 0
+        },
+        "backtestGate": {
+          "passed": false,
+          "reason": "failed gate (profitFactor/drawdown)"
+        },
+        "shadowGate": {
+          "passed": false,
+          "reason": "not evaluated"
+        },
+        "rlExecutionGuards": {
+          "confidence": 0,
+          "minHold": 0,
+          "flipCooldown": 0,
+          "confidenceTriggered": 0,
+          "actionsBeforeGuards": 0,
+          "actionsAfterGuards": 0,
+          "confidenceGateEnabled": false,
+          "confidenceQGap": 0.02,
+          "minHoldBars": 5,
+          "flipCooldownBars": 8
+        },
+        "recentAlerts": []
+      },
+      "backtestGate": false
+    }
+  },
+  "probes": {
+    "health": {
+      "ok": true,
+      "status": 200,
+      "summary": {
+        "status": "ok",
+        "service": "hydra-trader",
+        "uptimeMs": 227,
+        "backtestGate": false,
+        "wsClients": 0
+      }
+    },
+    "runtimeStatus": {
+      "ok": true,
+      "status": 200,
+      "summary": {
+        "stage": "paper",
+        "equityUsd": 10000,
+        "drawdownPct": 0,
+        "backtestGate": {
+          "passed": false,
+          "reason": "failed gate (profitFactor/drawdown)"
+        },
+        "paperTrades": 0
+      }
+    },
+    "backtestStatus": {
+      "ok": true,
+      "status": 200,
+      "summary": {
+        "passed": false,
+        "reason": "failed gate (profitFactor/drawdown)",
+        "netPnl": 0,
+        "profitFactor": 0,
+        "sharpe": 0
+      }
+    },
+    "mlRegistry": {
+      "ok": true,
+      "status": 200,
+      "summary": {
+        "championId": "6b56edd5-e061-4086-bb8e-a157a1721834",
+        "championKind": "rl_linear_q",
+        "challengers": 20
+      }
+    },
+    "rlStatus": {
+      "ok": true,
+      "status": 200,
+      "summary": {
+        "enabled": true,
+        "modelKind": "rl_linear_q",
+        "lastShadowAt": null
+      }
+    },
+    "backtestRun": {
+      "ok": true,
+      "status": 200,
+      "summary": {
+        "passed": false,
+        "reason": "failed gate (profitFactor/drawdown)",
+        "netPnl": 0,
+        "profitFactor": 0,
+        "sharpe": 0
+      }
+    }
+  },
+  "shutdown": {
+    "exitCode": null,
+    "signalCode": "SIGTERM",
+    "stdoutLines": 5,
+    "stderrLines": 2
+  }
+}

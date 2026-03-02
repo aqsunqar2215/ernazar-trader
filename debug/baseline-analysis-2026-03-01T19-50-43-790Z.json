@@ -1,0 +1,219 @@
+{
+  "statusFile": "c:\\Users\\Nitro\\Desktop\\tardes\\repo_hydra_audit\\debug\\live-paper-status-rerun-2026-03-01T19-50-43-790Z.jsonl",
+  "samples": {
+    "total": 54,
+    "usable": 54,
+    "firstTs": "2026-03-01T19:51:27.447Z",
+    "lastTs": "2026-03-01T20:17:58.145Z",
+    "durationMin": 26.511633333333332,
+    "healthErrors": 0
+  },
+  "tradingFromSamples": {
+    "startTrades": 0,
+    "endTrades": 56,
+    "tradesDelta": 56,
+    "estimatedTradesPerHour": 126.73681616497915,
+    "startNetPnlUsd": 0,
+    "endNetPnlUsd": -4.846365165814902,
+    "tradeChangePoints": [
+      {
+        "ts": "2026-03-01T19:52:27.499Z",
+        "from": 0,
+        "to": 2,
+        "delta": 2
+      },
+      {
+        "ts": "2026-03-01T19:53:57.523Z",
+        "from": 2,
+        "to": 3,
+        "delta": 1
+      },
+      {
+        "ts": "2026-03-01T19:54:27.538Z",
+        "from": 3,
+        "to": 5,
+        "delta": 2
+      },
+      {
+        "ts": "2026-03-01T19:54:57.550Z",
+        "from": 5,
+        "to": 7,
+        "delta": 2
+      },
+      {
+        "ts": "2026-03-01T19:55:57.580Z",
+        "from": 7,
+        "to": 8,
+        "delta": 1
+      },
+      {
+        "ts": "2026-03-01T19:56:27.599Z",
+        "from": 8,
+        "to": 9,
+        "delta": 1
+      },
+      {
+        "ts": "2026-03-01T19:57:57.628Z",
+        "from": 9,
+        "to": 10,
+        "delta": 1
+      },
+      {
+        "ts": "2026-03-01T19:58:27.638Z",
+        "from": 10,
+        "to": 11,
+        "delta": 1
+      },
+      {
+        "ts": "2026-03-01T20:00:57.713Z",
+        "from": 11,
+        "to": 13,
+        "delta": 2
+      },
+      {
+        "ts": "2026-03-01T20:01:27.728Z",
+        "from": 13,
+        "to": 15,
+        "delta": 2
+      },
+      {
+        "ts": "2026-03-01T20:01:57.735Z",
+        "from": 15,
+        "to": 17,
+        "delta": 2
+      },
+      {
+        "ts": "2026-03-01T20:03:27.770Z",
+        "from": 17,
+        "to": 21,
+        "delta": 4
+      },
+      {
+        "ts": "2026-03-01T20:03:57.786Z",
+        "from": 21,
+        "to": 22,
+        "delta": 1
+      },
+      {
+        "ts": "2026-03-01T20:06:27.851Z",
+        "from": 22,
+        "to": 24,
+        "delta": 2
+      },
+      {
+        "ts": "2026-03-01T20:06:57.860Z",
+        "from": 24,
+        "to": 26,
+        "delta": 2
+      },
+      {
+        "ts": "2026-03-01T20:07:27.877Z",
+        "from": 26,
+        "to": 28,
+        "delta": 2
+      },
+      {
+        "ts": "2026-03-01T20:07:57.891Z",
+        "from": 28,
+        "to": 30,
+        "delta": 2
+      },
+      {
+        "ts": "2026-03-01T20:08:27.900Z",
+        "from": 30,
+        "to": 33,
+        "delta": 3
+      },
+      {
+        "ts": "2026-03-01T20:08:57.917Z",
+        "from": 33,
+        "to": 34,
+        "delta": 1
+      },
+      {
+        "ts": "2026-03-01T20:09:57.937Z",
+        "from": 34,
+        "to": 35,
+        "delta": 1
+      },
+      {
+        "ts": "2026-03-01T20:10:27.948Z",
+        "from": 35,
+        "to": 36,
+        "delta": 1
+      },
+      {
+        "ts": "2026-03-01T20:10:57.959Z",
+        "from": 36,
+        "to": 37,
+        "delta": 1
+      },
+      {
+        "ts": "2026-03-01T20:11:27.969Z",
+        "from": 37,
+        "to": 38,
+        "delta": 1
+      },
+      {
+        "ts": "2026-03-01T20:11:57.977Z",
+        "from": 38,
+        "to": 39,
+        "delta": 1
+      },
+      {
+        "ts": "2026-03-01T20:13:58.038Z",
+        "from": 39,
+        "to": 43,
+        "delta": 4
+      },
+      {
+        "ts": "2026-03-01T20:14:28.045Z",
+        "from": 43,
+        "to": 45,
+        "delta": 2
+      },
+      {
+        "ts": "2026-03-01T20:15:28.079Z",
+        "from": 45,
+        "to": 49,
+        "delta": 4
+      },
+      {
+        "ts": "2026-03-01T20:16:58.111Z",
+        "from": 49,
+        "to": 52,
+        "delta": 3
+      },
+      {
+        "ts": "2026-03-01T20:17:28.125Z",
+        "from": 52,
+        "to": 55,
+        "delta": 3
+      },
+      {
+        "ts": "2026-03-01T20:17:58.145Z",
+        "from": 55,
+        "to": 56,
+        "delta": 1
+      }
+    ],
+    "aggregatedRiskReasons": {
+      "risk checks passed": 465
+    }
+  },
+  "liveRuntime": {
+    "fetchError": "TypeError: fetch failed",
+    "stage": null,
+    "paperMetrics": null,
+    "rlExecutionGuards": null,
+    "killSwitch": null,
+    "orderCount": 0,
+    "orderSides": {
+      "buy": 0,
+      "sell": 0
+    },
+    "signalActions": {},
+    "guardBlocks": {},
+    "riskDecisionBreakdown": {}
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "runId": "2026-03-01T19-50-43-790Z",
+  "port": 8081,
+  "pid": 30008,
+  "dbPath": "./data/trader-rerun-2026-03-01T19-50-43-790Z.db",
+  "logPath": "c:\\Users\\Nitro\\Desktop\\tardes\\repo_hydra_audit\\debug\\live-paper-runtime-rerun-2026-03-01T19-50-43-790Z.log",
+  "statusPath": "c:\\Users\\Nitro\\Desktop\\tardes\\repo_hydra_audit\\debug\\live-paper-status-rerun-2026-03-01T19-50-43-790Z.jsonl",
+  "startedAt": "2026-03-01T19:50:44.006Z",
+  "overrides": {
+    "PORT": "8081",
+    "DB_PATH": "./data/trader-rerun-2026-03-01T19-50-43-790Z.db",
+    "COOLDOWN_LOSS_STREAK": "999"
+  }
+}

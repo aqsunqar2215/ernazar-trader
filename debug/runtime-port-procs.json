@@ -1,0 +1,8 @@
+[
+  {
+    "port": 8101,
+    "pid": 23164,
+    "name": "node.exe",
+    "cmdline": "C:\\Program Files\\nodejs\\node.exe --require C:\\Users\\Nitro\\Desktop\\tardes\\repo_hydra_audit\\node_modules\\.pnpm\\tsx@4.21.0\\node_modules\\tsx\\dist\\preflight.cjs --import file:///C:/Users/Nitro/Desktop/tardes/repo_hydra_audit/node_modules/.pnpm/tsx@4.21.0/node_modules/tsx/dist/loader.mjs src/index.ts"
+  }
+]

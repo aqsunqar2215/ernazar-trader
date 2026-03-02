@@ -10,7 +10,7 @@ import { BacktestEngine, type BacktestOptions, type BacktestResult } from '../ba
 import { RlTrainer, type RlTrainOutput } from './rl-trainer.js';
 import type { RlLinearQPolicyModel } from './rl-policy.js';
 import { SupervisedLinearStrategy } from '../strategy/supervised-linear.js';
-import type { Candle, Fill } from '../core/types.js';
+import type { Candle, Fill, ShadowGateStatus } from '../core/types.js';
 
 interface PaperWindowMetrics {
   trades: number;
@@ -60,6 +60,11 @@ interface ShadowGuardState {
   activatedAt: number;
 }
 
+interface ShadowGateState {
+  championId: string;
+  activatedAt: number;
+}
+
 export class MlService {
   private readonly logger: Logger;
   private readonly registry: ModelRegistry;
@@ -74,6 +79,7 @@ export class MlService {
   private rlCooldownUntilPaperTrades = 0;
   private rlHardNegativeWindows: HardNegativeWindow[] = [];
   private shadowGuardState?: ShadowGuardState;
+  private shadowGateState?: ShadowGateState;
   private retrainWorker?: Worker;
   private retrainWorkerSeq = 0;
   private retrainWorkerPending = new Map<number, { resolve: (value: Record<string, unknown>) => void; reject: (error: Error) => void }>();
@@ -210,6 +216,24 @@ export class MlService {
         promoted: false,
       },
     };
+
+    const oosPrefilter = this.checkOosPrefilter(candles);
+    if (!oosPrefilter.passed) {
+      return {
+        ...result,
+        oosPrefilter,
+        supervised: {
+          attempted: false,
+          promoted: false,
+          reason: oosPrefilter.reason,
+        },
+        rl: {
+          attempted: false,
+          promoted: false,
+          reason: oosPrefilter.reason,
+        },
+      };
+    }
 
     const supervisedResult = this.retrainSupervised(candles, fills, paperWindow);
     result.supervised = supervisedResult;
@@ -542,6 +566,11 @@ export class MlService {
       riskPerTradePct: this.config.risk.maxRiskPerTradePct,
       turnoverPenaltyBps: this.config.rl.turnoverPenaltyBps,
       drawdownPenaltyFactor: this.config.rl.drawdownPenaltyFactor,
+      confidenceGateEnabled: this.config.rl.confidenceGateEnabled,
+      confidenceQGap: this.config.rl.confidenceQGap,
+      minHoldBars: this.config.rl.minHoldBars,
+      flipCooldownBars: this.config.rl.flipCooldownBars,
+      regimeSplitEnabled: this.config.rl.regimeSplitEnabled,
     };
     const rlTrainOptions = {
       episodes: this.config.rl.episodes,
@@ -561,6 +590,11 @@ export class MlService {
       rewardCostWeight: this.config.rl.rewardCostWeight,
       rewardHoldPenalty: this.config.rl.rewardHoldPenalty,
       rewardActionBonus: this.config.rl.rewardActionBonus,
+      confidenceGateEnabled: this.config.rl.confidenceGateEnabled,
+      confidenceQGap: this.config.rl.confidenceQGap,
+      minHoldBars: this.config.rl.minHoldBars,
+      flipCooldownBars: this.config.rl.flipCooldownBars,
+      regimeSplitEnabled: this.config.rl.regimeSplitEnabled,
       regimeBalanced: this.config.rl.regimeBalanced,
       regimeLookbackBars: this.config.rl.regimeLookbackBars,
       regimeEpisodeBars: this.config.rl.regimeEpisodeBars,
@@ -600,7 +634,69 @@ export class MlService {
       trainingSeedPolicy = replay.model;
     }
 
-    const rlOutput = this.rlTrainer.train(split.train, rlTrainOptions, trainingSeedPolicy);
+    const ensembleEnabled = this.config.rl.ensembleEnabled && this.config.rl.ensembleSize > 1;
+    const ensembleSize = Math.max(1, Math.floor(this.config.rl.ensembleSize));
+    let rlOutput: RlTrainOutput;
+    let holdout: ReturnType<RlTrainer['evaluate']>;
+    let gatePaper: PaperWindowMetrics;
+    let unseen: ReturnType<RlTrainer['evaluate']>;
+    let gateUnseen: PaperWindowMetrics;
+    let ensembleSummary: Record<string, unknown> | null = null;
+
+    if (ensembleEnabled) {
+      const runs: Array<{
+        output: RlTrainOutput;
+        holdout: ReturnType<RlTrainer['evaluate']>;
+        gatePaper: PaperWindowMetrics;
+        unseen: ReturnType<RlTrainer['evaluate']>;
+        gateUnseen: PaperWindowMetrics;
+        oosScore: number;
+      }> = [];
+      for (let idx = 0; idx < ensembleSize; idx += 1) {
+        const output = this.rlTrainer.train(split.train, rlTrainOptions, trainingSeedPolicy);
+        const holdoutResult = this.rlTrainer.evaluate(split.holdout, output.model, simOptions);
+        const holdoutPaper = this.toPaperMetricsFromRl(holdoutResult);
+        const unseenResult = split.unseen.length > 0
+          ? this.rlTrainer.evaluate(split.unseen, output.model, simOptions)
+          : this.rlTrainer.evaluate([], output.model, simOptions);
+        const unseenPaper = this.toPaperMetricsFromRl(unseenResult);
+        const oosScore = Number.isFinite(holdoutPaper.profitFactor) ? holdoutPaper.profitFactor : Number.NEGATIVE_INFINITY;
+        runs.push({ output, holdout: holdoutResult, gatePaper: holdoutPaper, unseen: unseenResult, gateUnseen: unseenPaper, oosScore });
+      }
+
+      const scores = runs.map(run => run.oosScore).filter(score => Number.isFinite(score));
+      const sortedScores = [...scores].sort((a, b) => a - b);
+      const medianScore = sortedScores.length > 0 ? sortedScores[Math.floor(sortedScores.length / 2)] : Number.NEGATIVE_INFINITY;
+      let chosen = runs[0];
+      let bestDistance = Math.abs(chosen.oosScore - medianScore);
+      for (const run of runs) {
+        const distance = Math.abs(run.oosScore - medianScore);
+        if (distance < bestDistance) {
+          chosen = run;
+          bestDistance = distance;
+        }
+      }
+
+      rlOutput = chosen.output;
+      holdout = chosen.holdout;
+      gatePaper = chosen.gatePaper;
+      unseen = chosen.unseen;
+      gateUnseen = chosen.gateUnseen;
+      ensembleSummary = {
+        enabled: true,
+        size: ensembleSize,
+        medianOosProfitFactor: Number.isFinite(medianScore) ? medianScore : null,
+        selectedOosProfitFactor: Number.isFinite(chosen.oosScore) ? chosen.oosScore : null,
+        scores: runs.map(run => run.oosScore),
+      };
+    } else {
+      rlOutput = this.rlTrainer.train(split.train, rlTrainOptions, trainingSeedPolicy);
+      holdout = this.rlTrainer.evaluate(split.holdout, rlOutput.model, simOptions);
+      gatePaper = this.toPaperMetricsFromRl(holdout);
+      unseen = split.unseen.length > 0 ? this.rlTrainer.evaluate(split.unseen, rlOutput.model, simOptions) : this.rlTrainer.evaluate([], rlOutput.model, simOptions);
+      gateUnseen = this.toPaperMetricsFromRl(unseen);
+    }
+
     const wf = this.rlTrainer.walkForwardFixed(
       split.train,
       rlOutput.model,
@@ -608,10 +704,6 @@ export class MlService {
       Math.max(1, Math.floor(this.config.ml.rlWfFolds)),
       this.config.ml.purgeBars,
     );
-    const holdout = this.rlTrainer.evaluate(split.holdout, rlOutput.model, simOptions);
-    const gatePaper = this.toPaperMetricsFromRl(holdout);
-    const unseen = split.unseen.length > 0 ? this.rlTrainer.evaluate(split.unseen, rlOutput.model, simOptions) : this.rlTrainer.evaluate([], rlOutput.model, simOptions);
-    const gateUnseen = this.toPaperMetricsFromRl(unseen);
 
     const challenger: RegisteredModel = {
       id: randomUUID(),
@@ -624,6 +716,7 @@ export class MlService {
       kind: 'rl_linear_q',
       qWeights: rlOutput.model.qWeights,
       qBias: rlOutput.model.qBias,
+      regimeHeads: this.cloneRegimeHeads(rlOutput.model.regimeHeads),
       training: {
         episodes: rlOutput.training.episodes,
         avgEpisodeReward: rlOutput.training.avgEpisodeReward,
@@ -655,7 +748,9 @@ export class MlService {
     };
 
     this.registry.registerChallenger(challenger);
-    const promotion = this.registry.evaluatePromotion({
+    const ensembleGate = this.evaluateEnsembleGate(ensembleSummary);
+    const promotion = ensembleGate.passed
+      ? this.registry.evaluatePromotion({
       challengerId: challenger.id,
       simplePromotionEnabled: this.config.ml.simplePromotionEnabled,
       simplePromotionAllowRl: this.config.ml.simplePromotionAllowRl,
@@ -671,7 +766,8 @@ export class MlService {
       minUnseenProfitFactor: this.config.ml.unseenMinProfitFactor,
       minUnseenSharpe: this.config.ml.unseenMinSharpe,
       minUnseenTrades: this.config.ml.unseenMinTrades,
-    });
+    })
+      : { promoted: false, reason: ensembleGate.reason };
     if (promotion.promoted) {
       this.auditPromotion(challenger.id, promotion.reason, wf.avgSharpe, gatePaper.profitFactor);
       this.consecutiveRlNotPromoted = 0;
@@ -699,6 +795,8 @@ export class MlService {
       challengerId: challenger.id,
       promoted: promotion.promoted,
       reason: promotion.reason,
+      ensemble: ensembleSummary,
+      ensembleGate,
       episodesRequested: this.config.rl.episodes,
       episodesRan: rlOutput.training.episodes,
       avgEpisodeReward: rlOutput.training.avgEpisodeReward,
@@ -749,6 +847,8 @@ export class MlService {
       challengerId: challenger.id,
       promoted: promotion.promoted,
       reason: promotion.reason,
+      ensemble: ensembleSummary,
+      ensembleGate,
       temporalSplit: {
         trainCandles: split.train.length,
         holdoutCandles: split.holdout.length,
@@ -894,6 +994,20 @@ export class MlService {
     return this.getBestRlModel();
   }
 
+  private cloneRegimeHeads(heads: RegisteredModel['regimeHeads'] | RlLinearQPolicyModel['regimeHeads'] | undefined): RegisteredModel['regimeHeads'] | undefined {
+    if (!heads) return undefined;
+    return {
+      trend: {
+        qWeights: heads.trend.qWeights.map(row => [...row]),
+        qBias: [...heads.trend.qBias],
+      },
+      mean: {
+        qWeights: heads.mean.qWeights.map(row => [...row]),
+        qBias: [...heads.mean.qBias],
+      },
+    };
+  }
+
   private asRlPolicy(model: RegisteredModel | undefined): RlLinearQPolicyModel | undefined {
     if (!model || model.kind !== 'rl_linear_q') return undefined;
     if (!Array.isArray(model.qWeights) || model.qWeights.length !== 3) return undefined;
@@ -904,6 +1018,7 @@ export class MlService {
       featureNames: [...model.featureNames],
       qWeights: model.qWeights.map(row => [...row]),
       qBias: [...model.qBias],
+      regimeHeads: this.cloneRegimeHeads(model.regimeHeads),
       epsilon: 0,
     };
   }
@@ -986,6 +1101,62 @@ export class MlService {
     };
   }
 
+  private checkOosPrefilter(candles: ReturnType<StateDb['getRecentCandles']>): {
+    passed: boolean;
+    reason: string;
+    requiredCandles: number;
+    perSymbol: Record<string, number>;
+  } {
+    const required = Math.max(0, Math.floor(this.config.ml.oosMinCandlesPerSymbol));
+    const perSymbol: Record<string, number> = {};
+    for (const symbol of this.config.market.symbols) {
+      perSymbol[symbol] = 0;
+    }
+    for (const candle of candles) {
+      if (candle.timeframe !== '1m' || candle.source === 'gap_fill') continue;
+      perSymbol[candle.symbol] = (perSymbol[candle.symbol] ?? 0) + 1;
+    }
+    if (required <= 0) {
+      return { passed: true, reason: 'oos prefilter disabled', requiredCandles: required, perSymbol };
+    }
+    const insufficient = Object.entries(perSymbol).filter(([, count]) => count < required);
+    if (insufficient.length > 0) {
+      return {
+        passed: false,
+        reason: 'insufficient oos candles per symbol',
+        requiredCandles: required,
+        perSymbol,
+      };
+    }
+    return { passed: true, reason: 'ok', requiredCandles: required, perSymbol };
+  }
+
+  private evaluateEnsembleGate(ensembleSummary: Record<string, unknown> | null): {
+    passed: boolean;
+    reason: string;
+    medianOosProfitFactor?: number;
+  } {
+    if (!ensembleSummary || (ensembleSummary as { enabled?: boolean }).enabled !== true) {
+      return { passed: true, reason: 'ensemble disabled' };
+    }
+    const median = toFiniteNumber(
+      (ensembleSummary as { medianOosProfitFactor?: unknown }).medianOosProfitFactor,
+      Number.NaN,
+    );
+    if (!Number.isFinite(median)) {
+      return { passed: false, reason: 'ensemble median OOS unavailable' };
+    }
+    const threshold = this.config.ml.minPaperProfitFactor;
+    if (median < threshold) {
+      return {
+        passed: false,
+        reason: `ensemble median OOS profit factor below threshold (${median.toFixed(4)} < ${threshold.toFixed(4)})`,
+        medianOosProfitFactor: median,
+      };
+    }
+    return { passed: true, reason: 'ok', medianOosProfitFactor: median };
+  }
+
   private splitTemporal(
     candles: ReturnType<StateDb['getRecentCandles']>,
     holdoutRatio: number,
@@ -1052,20 +1223,24 @@ export class MlService {
     return fills.filter(fill => fill.timestamp <= maxTimestampInclusive);
   }
 
-  private toPaperMetricsFromBacktest(result: BacktestResult): { trades: number; sharpe: number; profitFactor: number; netPnlUsd: number } {
+  private toPaperMetricsFromBacktest(result: BacktestResult): PaperWindowMetrics {
     return {
       trades: result.trades.length,
+      winRate: result.winRate,
       sharpe: result.sharpe,
       profitFactor: result.profitFactor,
+      maxDrawdownPct: result.maxDrawdown,
       netPnlUsd: result.netPnl,
     };
   }
 
-  private toPaperMetricsFromRl(result: ReturnType<RlTrainer['evaluate']>): { trades: number; sharpe: number; profitFactor: number; netPnlUsd: number } {
+  private toPaperMetricsFromRl(result: ReturnType<RlTrainer['evaluate']>): PaperWindowMetrics {
     return {
       trades: result.trades.length,
+      winRate: result.winRate,
       sharpe: result.sharpe,
       profitFactor: result.profitFactor,
+      maxDrawdownPct: result.maxDrawdown,
       netPnlUsd: result.netPnl,
     };
   }
@@ -1118,6 +1293,125 @@ export class MlService {
       return `rl retrain cooldown active until paper trades >= ${this.rlCooldownUntilPaperTrades} (current ${paperWindow.trades})`;
     }
     return null;
+  }
+
+  evaluateShadowGate(shadowStatus: Record<string, unknown>): ShadowGateStatus {
+    this.refreshRegistry();
+    if (!this.config.rl.shadowGateEnabled) {
+      return { passed: true, reason: 'shadow gate disabled' };
+    }
+
+    const champion = this.getChampionRlModel();
+    if (!champion) {
+      this.shadowGateState = undefined;
+      return { passed: false, reason: 'no rl champion' };
+    }
+    if (!this.shadowGateState || this.shadowGateState.championId !== champion.id) {
+      this.shadowGateState = {
+        championId: champion.id,
+        activatedAt: Date.now(),
+      };
+    }
+
+    const trades = toFiniteNumber(shadowStatus.trades, 0);
+    const profitFactor = toFiniteNumber(shadowStatus.profitFactor, 0);
+    const netPnlUsd = toFiniteNumber(shadowStatus.netPnlUsd, 0);
+    const maxDrawdownPct = toFiniteNumber(shadowStatus.maxDrawdownPct, 0);
+    const statusElapsedMs = toFiniteNumber(shadowStatus.elapsedMs, NaN);
+    const elapsedMs = Number.isFinite(statusElapsedMs)
+      ? statusElapsedMs
+      : Math.max(0, Date.now() - (this.shadowGateState?.activatedAt ?? Date.now()));
+
+    const tier1 = Math.max(1, Math.floor(this.config.rl.shadowGateTier1Trades));
+    const tier2 = Math.max(tier1, Math.floor(this.config.rl.shadowGateTier2Trades));
+    const tier3 = Math.max(tier2, Math.floor(this.config.rl.shadowGateTier3Trades));
+    const requiredTier = Math.max(1, Math.floor(this.config.rl.shadowGateRequiredTier));
+    const currentTier = trades >= tier3 ? tier3 : trades >= tier2 ? tier2 : trades >= tier1 ? tier1 : 0;
+
+    const timeoutHours = requiredTier >= tier3
+      ? this.config.rl.shadowGateTier3TimeoutHours
+      : requiredTier >= tier2
+        ? this.config.rl.shadowGateTier2TimeoutHours
+        : this.config.rl.shadowGateTier1TimeoutHours;
+    const timeoutMs = Math.max(0, Math.floor(timeoutHours)) * 60 * 60 * 1000;
+
+    const tradesPerMinuteRaw = toFiniteNumber(shadowStatus.tradesPerMinute, NaN);
+    const tradesPerMinute = Number.isFinite(tradesPerMinuteRaw)
+      ? tradesPerMinuteRaw
+      : elapsedMs > 0
+        ? trades / (elapsedMs / 60_000)
+        : NaN;
+
+    const kpi = {
+      tradesPerMinute: Number.isFinite(tradesPerMinute) ? tradesPerMinute : null,
+      profitFactor,
+      netPnlUsd,
+      maxDrawdownPct,
+    };
+    const kpiPass =
+      Number.isFinite(kpi.tradesPerMinute) &&
+      (kpi.tradesPerMinute as number) <= this.config.rl.shadowGateMaxTradesPerMinute &&
+      profitFactor >= this.config.rl.shadowGateMinProfitFactor &&
+      netPnlUsd >= this.config.rl.shadowGateMinNetPnlUsd &&
+      maxDrawdownPct <= this.config.rl.shadowGateMaxDrawdownPct;
+
+    const reachedTarget = trades >= requiredTier;
+    if (!reachedTarget) {
+      const timedOut = timeoutMs > 0 && elapsedMs > timeoutMs;
+      return {
+        passed: false,
+        reason: timedOut ? 'gate_timeout' : 'awaiting_trades',
+        tier: requiredTier,
+        currentTier,
+        trades,
+        elapsedMs,
+        kpi,
+        limits: {
+          maxTradesPerMinute: this.config.rl.shadowGateMaxTradesPerMinute,
+          minProfitFactor: this.config.rl.shadowGateMinProfitFactor,
+          minNetPnlUsd: this.config.rl.shadowGateMinNetPnlUsd,
+          maxDrawdownPct: this.config.rl.shadowGateMaxDrawdownPct,
+          timeoutMs,
+        },
+      };
+    }
+
+    if (!kpiPass) {
+      return {
+        passed: false,
+        reason: 'kpi_fail',
+        tier: requiredTier,
+        currentTier,
+        trades,
+        elapsedMs,
+        kpi,
+        limits: {
+          maxTradesPerMinute: this.config.rl.shadowGateMaxTradesPerMinute,
+          minProfitFactor: this.config.rl.shadowGateMinProfitFactor,
+          minNetPnlUsd: this.config.rl.shadowGateMinNetPnlUsd,
+          maxDrawdownPct: this.config.rl.shadowGateMaxDrawdownPct,
+          timeoutMs,
+        },
+      };
+    }
+
+    return {
+      passed: true,
+      reason: 'pass',
+      tier: requiredTier,
+      passedTier: requiredTier,
+      currentTier,
+      trades,
+      elapsedMs,
+      kpi,
+      limits: {
+        maxTradesPerMinute: this.config.rl.shadowGateMaxTradesPerMinute,
+        minProfitFactor: this.config.rl.shadowGateMinProfitFactor,
+        minNetPnlUsd: this.config.rl.shadowGateMinNetPnlUsd,
+        maxDrawdownPct: this.config.rl.shadowGateMaxDrawdownPct,
+        timeoutMs,
+      },
+    };
   }
 
   checkShadowGuard(shadowStatus: Record<string, unknown>): Record<string, unknown> {

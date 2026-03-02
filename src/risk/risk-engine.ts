@@ -5,7 +5,11 @@ export interface RiskState {
   peakEquityUsd: number;
   dailyPnlUsd: number;
   recentLossStreak: number;
+  lossCooldownUntilMs: number;
+  nowMs: number;
   ordersLastMinute: number;
+  turnoverLastHour: number;
+  turnoverForSignal: number;
   killSwitch: boolean;
 }
 
@@ -14,7 +18,7 @@ export interface RiskLimits {
   maxDailyLossUsd: number;
   maxDrawdownPct: number;
   maxOrdersPerMinute: number;
-  cooldownLossStreak: number;
+  maxTurnoverPerHour: number;
 }
 
 export class RiskEngine {
@@ -38,7 +42,10 @@ export class RiskEngine {
     if (state.ordersLastMinute >= this.limits.maxOrdersPerMinute) {
       return { allowed: false, reason: 'max orders per minute breached' };
     }
-    if (state.recentLossStreak >= this.limits.cooldownLossStreak) {
+    if (this.limits.maxTurnoverPerHour > 0 && state.turnoverLastHour + state.turnoverForSignal > this.limits.maxTurnoverPerHour) {
+      return { allowed: false, reason: 'max turnover per hour breached' };
+    }
+    if (state.lossCooldownUntilMs > state.nowMs) {
       return { allowed: false, reason: 'cooldown after loss streak' };
     }
 

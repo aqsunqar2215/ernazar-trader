@@ -1,0 +1,74 @@
+{
+  "statusFile": "c:\\Users\\Nitro\\Desktop\\tardes\\repo_hydra_audit\\debug\\live-paper-status-index1-2026-03-02T07-06-31-551Z.jsonl",
+  "samples": {
+    "total": 4,
+    "usable": 3,
+    "firstTs": "2026-03-02T07:07:02.514Z",
+    "lastTs": "2026-03-02T07:08:02.572Z",
+    "durationMin": 1.0009666666666666,
+    "healthErrors": 1
+  },
+  "tradingFromSamples": {
+    "startTrades": 0,
+    "endTrades": 2,
+    "tradesDelta": 2,
+    "estimatedTradesPerHour": 119.88411202504247,
+    "startNetPnlUsd": 0,
+    "endNetPnlUsd": -0.09577581684,
+    "tradeChangePoints": [
+      {
+        "ts": "2026-03-02T07:08:02.572Z",
+        "from": 0,
+        "to": 2,
+        "delta": 2
+      }
+    ],
+    "aggregatedRiskReasons": {
+      "risk checks passed": 2
+    }
+  },
+  "liveRuntime": {
+    "fetchError": null,
+    "stage": "paper",
+    "paperMetrics": {
+      "trades": 2,
+      "wins": 0,
+      "losses": 2,
+      "grossProfitUsd": 0,
+      "grossLossUsd": 0.09577581684,
+      "netPnlUsd": -0.09577581684,
+      "maxDrawdownPct": 0.7992870595683962,
+      "winRate": 0,
+      "profitFactor": 0
+    },
+    "rlExecutionGuards": {
+      "confidence": 0,
+      "minHold": 0,
+      "flipCooldown": 0,
+      "confidenceTriggered": 0,
+      "actionsBeforeGuards": 2,
+      "actionsAfterGuards": 2,
+      "confidenceGateEnabled": false,
+      "confidenceQGap": 0.008,
+      "minHoldBars": 12,
+      "flipCooldownBars": 8
+    },
+    "killSwitch": {
+      "enabled": false,
+      "reason": ""
+    },
+    "orderCount": 2,
+    "orderSides": {
+      "buy": 2,
+      "sell": 0
+    },
+    "signalActions": {
+      "hold": 109,
+      "buy": 2
+    },
+    "guardBlocks": {},
+    "riskDecisionBreakdown": {
+      "risk checks passed | allowed=true": 2
+    }
+  }
+}

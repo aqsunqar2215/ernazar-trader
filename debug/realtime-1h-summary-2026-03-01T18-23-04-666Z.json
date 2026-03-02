@@ -1,0 +1,175 @@
+{
+  "runId": "2026-03-01T18-23-04-666Z",
+  "startedAt": "2026-03-01T18:23:04.764Z",
+  "endedAt": "2026-03-01T19:23:32.278Z",
+  "durationMinutes": 60,
+  "launchedOwnRuntime": false,
+  "files": {
+    "samplesPath": "c:\\Users\\Nitro\\Desktop\\tardes\\repo_hydra_audit\\debug\\realtime-1h-samples-2026-03-01T18-23-04-666Z.jsonl",
+    "summaryPath": "c:\\Users\\Nitro\\Desktop\\tardes\\repo_hydra_audit\\debug\\realtime-1h-summary-2026-03-01T18-23-04-666Z.json",
+    "childLogPath": null,
+    "fileLogPath": "c:\\Users\\Nitro\\Desktop\\tardes\\repo_hydra_audit\\debug\\live-paper-runtime.log"
+  },
+  "sampleCount": 120,
+  "healthErrorCount": 0,
+  "cumulativeLogWarnCount": 0,
+  "cumulativeLogErrorCount": 0,
+  "startState": {
+    "ts": "2026-03-01T18:23:04.764Z",
+    "ok": true,
+    "pollError": null,
+    "healthStatus": "ok",
+    "uptimeMs": 6066714,
+    "stage": "paper",
+    "paperMetrics": {
+      "trades": 3,
+      "wins": 0,
+      "losses": 3,
+      "grossProfitUsd": 0,
+      "grossLossUsd": 1.134991592768529,
+      "netPnlUsd": -1.134991592768529,
+      "maxDrawdownPct": 0.4010707473162445,
+      "winRate": 0,
+      "profitFactor": 0
+    },
+    "rlExecutionGuards": {
+      "confidence": 0,
+      "minHold": 2,
+      "flipCooldown": 3,
+      "confidenceTriggered": 0,
+      "actionsBeforeGuards": 2195,
+      "actionsAfterGuards": 2190,
+      "confidenceGateEnabled": false,
+      "confidenceQGap": 0.02,
+      "minHoldBars": 5,
+      "flipCooldownBars": 8
+    },
+    "killSwitch": {
+      "enabled": false,
+      "reason": ""
+    },
+    "equityUsd": 10019.196257610398,
+    "realizedPnlUsd": -1.134991592768529,
+    "unrealizedPnlUsd": -20.27850015899273,
+    "positionsCount": 2,
+    "openPositions": [
+      {
+        "symbol": "BTCUSDT",
+        "quantity": -0.0005175028460743657,
+        "avgPrice": 66847.94,
+        "unrealizedPnl": 0.22266594958041944,
+        "updatedAt": 1772389384544
+      },
+      {
+        "symbol": "ETHUSDT",
+        "quantity": 0.008418919141709745,
+        "avgPrice": 4418.510420365304,
+        "unrealizedPnl": -20.501166108573152,
+        "updatedAt": 1772389384545
+      }
+    ],
+    "ordersCount": 250,
+    "latestOrder": {
+      "clientOrderId": "c344ea59-270b-427c-a1ce-0e990c2f44cd",
+      "exchangeOrderId": "paper-c344ea59-270b-427c-a1ce-0e990c2f44cd",
+      "symbol": "BTCUSDT",
+      "side": "sell",
+      "quantity": 0.000597,
+      "filledQuantity": 0.000597,
+      "avgFillPrice": 66847.94,
+      "status": "filled",
+      "createdAt": 1772383484855,
+      "updatedAt": 1772383485055
+    },
+    "riskReasons": {
+      "cooldown after loss streak": 153
+    },
+    "guardReasons": {},
+    "newLogLines": 0,
+    "cumulativeLogWarnCount": 0,
+    "cumulativeLogErrorCount": 0
+  },
+  "endState": {
+    "ts": "2026-03-01T19:23:02.064Z",
+    "ok": true,
+    "pollError": null,
+    "healthStatus": "ok",
+    "uptimeMs": 9664012,
+    "stage": "paper",
+    "paperMetrics": {
+      "trades": 3,
+      "wins": 0,
+      "losses": 3,
+      "grossProfitUsd": 0,
+      "grossLossUsd": 1.134991592768529,
+      "netPnlUsd": -1.134991592768529,
+      "maxDrawdownPct": 0.4010707473162445,
+      "winRate": 0,
+      "profitFactor": 0
+    },
+    "rlExecutionGuards": {
+      "confidence": 0,
+      "minHold": 2,
+      "flipCooldown": 3,
+      "confidenceTriggered": 0,
+      "actionsBeforeGuards": 3555,
+      "actionsAfterGuards": 3550,
+      "confidenceGateEnabled": false,
+      "confidenceQGap": 0.02,
+      "minHoldBars": 5,
+      "flipCooldownBars": 8
+    },
+    "killSwitch": {
+      "enabled": false,
+      "reason": ""
+    },
+    "equityUsd": 10019.226412944008,
+    "realizedPnlUsd": -1.134991592768529,
+    "unrealizedPnlUsd": -20.24834482538219,
+    "positionsCount": 2,
+    "openPositions": [
+      {
+        "symbol": "BTCUSDT",
+        "quantity": -0.0005175028460743657,
+        "avgPrice": 66847.94,
+        "unrealizedPnl": 0.4049511520816567,
+        "updatedAt": 1772392980551
+      },
+      {
+        "symbol": "ETHUSDT",
+        "quantity": 0.008418919141709745,
+        "avgPrice": 4418.510420365304,
+        "unrealizedPnl": -20.65329597746385,
+        "updatedAt": 1772392980551
+      }
+    ],
+    "ordersCount": 250,
+    "latestOrder": {
+      "clientOrderId": "c344ea59-270b-427c-a1ce-0e990c2f44cd",
+      "exchangeOrderId": "paper-c344ea59-270b-427c-a1ce-0e990c2f44cd",
+      "symbol": "BTCUSDT",
+      "side": "sell",
+      "quantity": 0.000597,
+      "filledQuantity": 0.000597,
+      "avgFillPrice": 66847.94,
+      "status": "filled",
+      "createdAt": 1772383484855,
+      "updatedAt": 1772383485055
+    },
+    "riskReasons": {
+      "cooldown after loss streak": 178
+    },
+    "guardReasons": {},
+    "newLogLines": 0,
+    "cumulativeLogWarnCount": 0,
+    "cumulativeLogErrorCount": 0
+  },
+  "tradesDelta": 0,
+  "netPnlDeltaUsd": 0,
+  "winDelta": 0,
+  "lossDelta": 0,
+  "aggregatedRiskReasons": {
+    "cooldown after loss streak": 20528
+  },
+  "aggregatedGuardReasons": {}
+}

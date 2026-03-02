@@ -1,0 +1,32 @@
+{
+  "reachedTarget": false,
+  "gate": {
+    "passed": false,
+    "reason": "likely_gate_timeout",
+    "kpi": {
+      "tradesPerMinute": 0.0,
+      "profitFactor": 0,
+      "netPnlUsd": -1.2782896617354709,
+      "maxDrawdownPct": 0.01278289661735471
+    }
+  },
+  "paperSanity": {
+    "passed": true,
+    "reason": "ok"
+  },
+  "guardBlocks": {
+    "confidence": 90,
+    "minHold": 0,
+    "flipCooldown": 0,
+    "confidenceTriggered": 149,
+    "total": 90,
+    "actionsBeforeGuards": 92,
+    "actionsAfterGuards": 2,
+    "confidenceGateEnabled": true,
+    "confidenceQGap": 0.005
+  },
+  "sampleStats": {
+    "elapsedMinutes": 2.0414166666666667,
+    "tradesPerMinute": 0.0
+  }
+}

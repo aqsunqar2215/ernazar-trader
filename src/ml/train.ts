@@ -11,6 +11,10 @@ export interface TrainedModel {
   kind?: 'supervised_linear' | 'rl_linear_q';
   qWeights?: number[][];
   qBias?: number[];
+  regimeHeads?: {
+    trend: { qWeights: number[][]; qBias: number[] };
+    mean: { qWeights: number[][]; qBias: number[] };
+  };
   training?: Record<string, number | string>;
   metrics: {
     accuracy: number;

@@ -1,0 +1,60 @@
+{
+  "createdAt": "2026-03-02T08:36:38.133Z",
+  "baselinePath": "c:\\Users\\Nitro\\Desktop\\tardes\\repo_hydra_audit\\debug\\live-paper-status-rerun-2026-03-01T19-50-43-790Z.jsonl",
+  "candidatePath": "c:\\Users\\Nitro\\Desktop\\tardes\\repo_hydra_audit\\debug\\live-paper-status-index1-2026-03-02T07-06-31-551Z.jsonl",
+  "baseline": {
+    "samples": 54,
+    "firstTs": "2026-03-01T19:51:27.447Z",
+    "lastTs": "2026-03-01T20:17:58.145Z",
+    "durationMin": 26.511633333333332,
+    "tradesStart": 0,
+    "tradesEnd": 56,
+    "tradesDelta": 56,
+    "tradesPerMinute": 2.112280269416319,
+    "endProfitFactor": 0.002281120428626457,
+    "endNetPnlUsd": -4.846365165814902,
+    "endMaxDrawdownPct": 1.1557329547038067,
+    "endWinRate": 0.017857142857142856
+  },
+  "candidate": {
+    "samples": 179,
+    "firstTs": "2026-03-02T07:07:02.514Z",
+    "lastTs": "2026-03-02T08:36:06.185Z",
+    "durationMin": 89.06118333333333,
+    "tradesStart": 0,
+    "tradesEnd": 106,
+    "tradesDelta": 106,
+    "tradesPerMinute": 1.190193033964853,
+    "endProfitFactor": 0.00392945267957351,
+    "endNetPnlUsd": -9.522639266994547,
+    "endMaxDrawdownPct": 1.3398222546550385,
+    "endWinRate": 0.009433962264150943
+  },
+  "comparison": {
+    "profitFactor": {
+      "baseline": 0.002281120428626457,
+      "candidate": 0.00392945267957351,
+      "delta": 0.0016483322509470533,
+      "betterOrEqual": true
+    },
+    "netPnlUsd": {
+      "baseline": -4.846365165814902,
+      "candidate": -9.522639266994547,
+      "delta": -4.676274101179645,
+      "betterOrEqual": false
+    },
+    "maxDrawdownPct": {
+      "baseline": 1.1557329547038067,
+      "candidate": 1.3398222546550385,
+      "delta": 0.1840892999512318,
+      "betterOrEqual": false
+    },
+    "tradesPerMinute": {
+      "baseline": 2.112280269416319,
+      "candidate": 1.190193033964853,
+      "delta": -0.9220872354514662,
+      "betterOrEqual": false
+    }
+  },
+  "promoteTinyLive": false
+}

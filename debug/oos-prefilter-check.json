@@ -1,0 +1,22 @@
+{
+  "ok": true,
+  "oosPrefilter": {
+    "passed": false,
+    "reason": "insufficient oos candles per symbol",
+    "requiredCandles": 999999,
+    "perSymbol": {
+      "BTCUSDT": 20542,
+      "ETHUSDT": 20542
+    }
+  },
+  "supervised": {
+    "attempted": false,
+    "promoted": false,
+    "reason": "insufficient oos candles per symbol"
+  },
+  "rl": {
+    "attempted": false,
+    "promoted": false,
+    "reason": "insufficient oos candles per symbol"
+  }
+}

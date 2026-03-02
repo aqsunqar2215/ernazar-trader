@@ -1,0 +1,22 @@
+{
+  "runId": "2026-03-02T07-06-31-551Z",
+  "port": 8625,
+  "pid": 25840,
+  "dbPath": "./data/trader-index1-paper-2026-03-02T07-06-31-551Z.db",
+  "logPath": "c:\\Users\\Nitro\\Desktop\\tardes\\repo_hydra_audit\\debug\\live-paper-runtime-index1-2026-03-02T07-06-31-551Z.log",
+  "statusPath": "c:\\Users\\Nitro\\Desktop\\tardes\\repo_hydra_audit\\debug\\live-paper-status-index1-2026-03-02T07-06-31-551Z.jsonl",
+  "startedAt": "2026-03-02T07:06:31.780Z",
+  "profile": "index1-paper-binance",
+  "overrides": {
+    "PORT": "8625",
+    "DB_PATH": "./data/trader-index1-paper-2026-03-02T07-06-31-551Z.db",
+    "COOLDOWN_LOSS_STREAK": "999",
+    "MARKET_MODE": "binance",
+    "ROLLOUT_MODE": "paper",
+    "PAPER_ONLY": "true",
+    "RL_CONFIDENCE_GATE_ENABLED": "false",
+    "RL_CONFIDENCE_Q_GAP": "0.008",
+    "RL_MIN_HOLD_BARS": "12",
+    "RL_FLIP_COOLDOWN_BARS": "8"
+  }
+}

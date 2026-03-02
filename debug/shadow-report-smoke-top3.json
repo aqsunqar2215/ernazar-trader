@@ -1,0 +1,32 @@
+[
+  {
+    "qGap": 0.009,
+    "minHold": 12,
+    "flipCooldown": 8,
+    "reportPath": "debug/shadow-report-smoke-q0p009-h12-f8.json",
+    "screeningTradesPerMinute": 0,
+    "expectedMinutesTo100": null,
+    "timeoutMinutes": 120,
+    "error": "Error: ENOENT: no such file or directory, open 'C:\\Users\\Nitro\\Desktop\\tardes\\repo_hydra_audit\\debug\\shadow-report-smoke-q0p009-h12-f8.json'"
+  },
+  {
+    "qGap": 0.008,
+    "minHold": 12,
+    "flipCooldown": 8,
+    "reportPath": "debug/shadow-report-smoke-q0p008-h12-f8.json",
+    "screeningTradesPerMinute": 0,
+    "expectedMinutesTo100": null,
+    "timeoutMinutes": 120,
+    "error": "Error: ENOENT: no such file or directory, open 'C:\\Users\\Nitro\\Desktop\\tardes\\repo_hydra_audit\\debug\\shadow-report-smoke-q0p008-h12-f8.json'"
+  },
+  {
+    "qGap": 0.006,
+    "minHold": 5,
+    "flipCooldown": 8,
+    "reportPath": "debug/shadow-report-smoke-q0p006-h5-f8.json",
+    "screeningTradesPerMinute": 0,
+    "expectedMinutesTo100": null,
+    "timeoutMinutes": 120,
+    "error": "Error: ENOENT: no such file or directory, open 'C:\\Users\\Nitro\\Desktop\\tardes\\repo_hydra_audit\\debug\\shadow-report-smoke-q0p006-h5-f8.json'"
+  }
+]

@@ -1,0 +1,140 @@
+{
+  "startedAt": "2026-03-02T11:25:21.003Z",
+  "statePath": "debug/live-ab-12h-state-2026-03-02T11-25-20-941Z.json",
+  "presets": [
+    {
+      "name": "safe",
+      "runtimePort": "8641",
+      "durationMs": 21600000,
+      "runtimeEnv": {
+        "RL_CONFIDENCE_Q_GAP": "0.004",
+        "RL_MIN_HOLD_BARS": "12",
+        "RL_FLIP_COOLDOWN_BARS": "8",
+        "COOLDOWN_LOSS_STREAK": "5",
+        "COOLDOWN_LOSS_MINUTES": "5"
+      }
+    },
+    {
+      "name": "aggressive",
+      "runtimePort": "8642",
+      "durationMs": 21600000,
+      "runtimeEnv": {
+        "RL_CONFIDENCE_Q_GAP": "0.006",
+        "RL_MIN_HOLD_BARS": "8",
+        "RL_FLIP_COOLDOWN_BARS": "6",
+        "COOLDOWN_LOSS_STREAK": "6",
+        "COOLDOWN_LOSS_MINUTES": "3"
+      }
+    }
+  ],
+  "sessions": [
+    {
+      "name": "safe",
+      "startedAt": "2026-03-02T11:25:21.005Z",
+      "durationMs": 21600000,
+      "runtimePort": 8641,
+      "start": {
+        "code": 0,
+        "signal": null,
+        "stdout": "{\"status\":\"started\",\"runId\":\"2026-03-02T11-25-21-450Z\",\"port\":8641,\"pid\":30888,\"dbPath\":\"./data/trader-index1-paper-2026-03-02T11-25-21-450Z.db\",\"logPath\":\"c:\\\\Users\\\\Nitro\\\\Desktop\\\\tardes\\\\repo_hydra_audit\\\\debug\\\\live-paper-runtime-index1-2026-03-02T11-25-21-450Z.log\",\"statusPath\":\"c:\\\\Users\\\\Nitro\\\\Desktop\\\\tardes\\\\repo_hydra_audit\\\\debug\\\\live-paper-status-index1-2026-03-02T11-25-21-450Z.jsonl\",\"startedAt\":\"2026-03-02T11:25:21.676Z\",\"profile\":\"index1-paper-binance\",\"overrides\":{\"PORT\":\"8641\",\"DB_PATH\":\"./data/trader-index1-paper-2026-03-02T11-25-21-450Z.db\",\"COOLDOWN_LOSS_STREAK\":\"5\",\"COOLDOWN_LOSS_MINUTES\":\"5\",\"MARKET_MODE\":\"binance\",\"ROLLOUT_MODE\":\"paper\",\"PAPER_ONLY\":\"true\",\"RL_CONFIDENCE_GATE_ENABLED\":\"true\",\"RL_CONFIDENCE_Q_GAP\":\"0.004\",\"RL_MIN_HOLD_BARS\":\"12\",\"RL_FLIP_COOLDOWN_BARS\":\"8\",\"MAX_RISK_PER_TRADE_PCT\":\"0.5\",\"MAX_ORDERS_PER_MINUTE\":\"3\",\"MAX_TURNOVER_PER_HOUR\":\"24\"}}\n",
+        "stderr": "",
+        "meta": {
+          "status": "started",
+          "runId": "2026-03-02T11-25-21-450Z",
+          "port": 8641,
+          "pid": 30888,
+          "dbPath": "./data/trader-index1-paper-2026-03-02T11-25-21-450Z.db",
+          "logPath": "c:\\Users\\Nitro\\Desktop\\tardes\\repo_hydra_audit\\debug\\live-paper-runtime-index1-2026-03-02T11-25-21-450Z.log",
+          "statusPath": "c:\\Users\\Nitro\\Desktop\\tardes\\repo_hydra_audit\\debug\\live-paper-status-index1-2026-03-02T11-25-21-450Z.jsonl",
+          "startedAt": "2026-03-02T11:25:21.676Z",
+          "profile": "index1-paper-binance",
+          "overrides": {
+            "PORT": "8641",
+            "DB_PATH": "./data/trader-index1-paper-2026-03-02T11-25-21-450Z.db",
+            "COOLDOWN_LOSS_STREAK": "5",
+            "COOLDOWN_LOSS_MINUTES": "5",
+            "MARKET_MODE": "binance",
+            "ROLLOUT_MODE": "paper",
+            "PAPER_ONLY": "true",
+            "RL_CONFIDENCE_GATE_ENABLED": "true",
+            "RL_CONFIDENCE_Q_GAP": "0.004",
+            "RL_MIN_HOLD_BARS": "12",
+            "RL_FLIP_COOLDOWN_BARS": "8",
+            "MAX_RISK_PER_TRADE_PCT": "0.5",
+            "MAX_ORDERS_PER_MINUTE": "3",
+            "MAX_TURNOVER_PER_HOUR": "24"
+          }
+        }
+      },
+      "poll": {
+        "code": 3221225786,
+        "signal": null,
+        "stdout": "",
+        "stderr": ""
+      },
+      "stop": {
+        "code": 1,
+        "signal": null,
+        "stdout": "",
+        "stderr": "\"taskkill\" �� ���� ����७��� ��� ���譥�\r\n��������, �ᯮ��塞�� �ணࠬ��� ��� ������ 䠩���.\r\n"
+      },
+      "finishedAt": "2026-03-02T11:34:54.350Z",
+      "error": null
+    },
+    {
+      "name": "aggressive",
+      "startedAt": "2026-03-02T11:34:54.351Z",
+      "durationMs": 21600000,
+      "runtimePort": 8642,
+      "start": {
+        "code": 0,
+        "signal": null,
+        "stdout": "{\"status\":\"started\",\"runId\":\"2026-03-02T11-34-55-144Z\",\"port\":8642,\"pid\":12256,\"dbPath\":\"./data/trader-index1-paper-2026-03-02T11-34-55-144Z.db\",\"logPath\":\"c:\\\\Users\\\\Nitro\\\\Desktop\\\\tardes\\\\repo_hydra_audit\\\\debug\\\\live-paper-runtime-index1-2026-03-02T11-34-55-144Z.log\",\"statusPath\":\"c:\\\\Users\\\\Nitro\\\\Desktop\\\\tardes\\\\repo_hydra_audit\\\\debug\\\\live-paper-status-index1-2026-03-02T11-34-55-144Z.jsonl\",\"startedAt\":\"2026-03-02T11:34:55.383Z\",\"profile\":\"index1-paper-binance\",\"overrides\":{\"PORT\":\"8642\",\"DB_PATH\":\"./data/trader-index1-paper-2026-03-02T11-34-55-144Z.db\",\"COOLDOWN_LOSS_STREAK\":\"6\",\"COOLDOWN_LOSS_MINUTES\":\"3\",\"MARKET_MODE\":\"binance\",\"ROLLOUT_MODE\":\"paper\",\"PAPER_ONLY\":\"true\",\"RL_CONFIDENCE_GATE_ENABLED\":\"true\",\"RL_CONFIDENCE_Q_GAP\":\"0.006\",\"RL_MIN_HOLD_BARS\":\"8\",\"RL_FLIP_COOLDOWN_BARS\":\"6\",\"MAX_RISK_PER_TRADE_PCT\":\"0.5\",\"MAX_ORDERS_PER_MINUTE\":\"3\",\"MAX_TURNOVER_PER_HOUR\":\"24\"}}\n",
+        "stderr": "",
+        "meta": {
+          "status": "started",
+          "runId": "2026-03-02T11-34-55-144Z",
+          "port": 8642,
+          "pid": 12256,
+          "dbPath": "./data/trader-index1-paper-2026-03-02T11-34-55-144Z.db",
+          "logPath": "c:\\Users\\Nitro\\Desktop\\tardes\\repo_hydra_audit\\debug\\live-paper-runtime-index1-2026-03-02T11-34-55-144Z.log",
+          "statusPath": "c:\\Users\\Nitro\\Desktop\\tardes\\repo_hydra_audit\\debug\\live-paper-status-index1-2026-03-02T11-34-55-144Z.jsonl",
+          "startedAt": "2026-03-02T11:34:55.383Z",
+          "profile": "index1-paper-binance",
+          "overrides": {
+            "PORT": "8642",
+            "DB_PATH": "./data/trader-index1-paper-2026-03-02T11-34-55-144Z.db",
+            "COOLDOWN_LOSS_STREAK": "6",
+            "COOLDOWN_LOSS_MINUTES": "3",
+            "MARKET_MODE": "binance",
+            "ROLLOUT_MODE": "paper",
+            "PAPER_ONLY": "true",
+            "RL_CONFIDENCE_GATE_ENABLED": "true",
+            "RL_CONFIDENCE_Q_GAP": "0.006",
+            "RL_MIN_HOLD_BARS": "8",
+            "RL_FLIP_COOLDOWN_BARS": "6",
+            "MAX_RISK_PER_TRADE_PCT": "0.5",
+            "MAX_ORDERS_PER_MINUTE": "3",
+            "MAX_TURNOVER_PER_HOUR": "24"
+          }
+        }
+      },
+      "poll": {
+        "code": 3221225786,
+        "signal": null,
+        "stdout": "",
+        "stderr": ""
+      },
+      "stop": {
+        "code": 1,
+        "signal": null,
+        "stdout": "",
+        "stderr": "\"taskkill\" �� ���� ����७��� ��� ���譥�\r\n��������, �ᯮ��塞�� �ணࠬ��� ��� ������ 䠩���.\r\n"
+      },
+      "finishedAt": "2026-03-02T11:34:59.914Z",
+      "error": null
+    }
+  ],
+  "finishedAt": "2026-03-02T11:34:59.916Z",
+  "error": null
+}

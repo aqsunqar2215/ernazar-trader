@@ -5,10 +5,14 @@ import {
   actionIndexToLabel,
   actionIndexToValue,
   actionValueToIndex,
+  classifyRegime,
   createEmptyRlPolicy,
   greedyActionIndex,
+  selectActionWithConfidence,
   scoreActions,
+  scoreActionsForRegime,
   type RlLinearQPolicyModel,
+  type RlRegime,
 } from './rl-policy.js';
 
 export interface RlBacktestTrade {
@@ -51,6 +55,11 @@ export interface RlTrainerOptions {
   rewardCostWeight: number;
   rewardHoldPenalty: number;
   rewardActionBonus: number;
+  confidenceGateEnabled: boolean;
+  confidenceQGap: number;
+  minHoldBars: number;
+  flipCooldownBars: number;
+  regimeSplitEnabled: boolean;
   regimeBalanced: boolean;
   regimeLookbackBars: number;
   regimeEpisodeBars: number;
@@ -71,6 +80,9 @@ export interface RlTrainOutput {
     buyShare: number;
     sellShare: number;
     holdShare: number;
+    qGapP50?: number;
+    qGapP75?: number;
+    qGapP90?: number;
   };
   inSample: RlSimulationResult;
 }
@@ -100,11 +112,14 @@ interface EpisodeState {
   entryPrice: number;
   entryTs: number;
   entryBar: number;
+  lastFlipBar: number;
   pendingAction: Array<{
     executeAt: number;
     action: -1 | 0 | 1;
     actionIdx: number;
     features: number[];
+    regime: RlRegime;
+    qGap: number;
   }>;
 }
 
@@ -116,6 +131,11 @@ interface SimulatorOptions {
   riskPerTradePct: number;
   turnoverPenaltyBps: number;
   drawdownPenaltyFactor: number;
+  confidenceGateEnabled: boolean;
+  confidenceQGap: number;
+  minHoldBars: number;
+  flipCooldownBars: number;
+  regimeSplitEnabled: boolean;
 }
 
 interface RlEpisodeTelemetry {
@@ -128,6 +148,7 @@ interface RlEpisodeTelemetry {
   buyDecisions: number;
   sellDecisions: number;
   holdDecisions: number;
+  qGapSamples: number[];
 }
 
 type RegimeName = 'trend' | 'flat' | 'volatile';
@@ -152,11 +173,16 @@ const defaultTrainerOptions: RlTrainerOptions = {
   slippageBps: 2,
   latencyBars: 1,
   riskPerTradePct: 0.8,
-  turnoverPenaltyBps: 0.2,
+  turnoverPenaltyBps: 0.5,
   drawdownPenaltyFactor: 0.05,
-  rewardCostWeight: 0.5,
+  rewardCostWeight: 0.8,
   rewardHoldPenalty: 0.00012,
-  rewardActionBonus: 0.00005,
+  rewardActionBonus: 0,
+  confidenceGateEnabled: true,
+  confidenceQGap: 0.02,
+  minHoldBars: 5,
+  flipCooldownBars: 8,
+  regimeSplitEnabled: false,
   regimeBalanced: true,
   regimeLookbackBars: 96,
   regimeEpisodeBars: 320,
@@ -169,8 +195,13 @@ const defaultSimulatorOptions: SimulatorOptions = {
   slippageBps: 2,
   latencyBars: 1,
   riskPerTradePct: 0.8,
-  turnoverPenaltyBps: 0.1,
+  turnoverPenaltyBps: 0.5,
   drawdownPenaltyFactor: 0.02,
+  confidenceGateEnabled: true,
+  confidenceQGap: 0.02,
+  minHoldBars: 5,
+  flipCooldownBars: 8,
+  regimeSplitEnabled: false,
 };
 
 // Reward shaping bands tuned for NORMALISED returns (pnl/notional, not raw USD).
@@ -196,6 +227,8 @@ const pnlRewardBands = {
 const REPLAY_BUFFER_SIZE = 3_000;
 const REPLAY_BATCH_SIZE = 32;
 const TARGET_NETWORK_UPDATE_FREQ = 25; // episodes between target weight freeze
+type RegimeHeadSnapshot = { qWeights: number[][]; qBias: number[] };
+type RegimeHeadMap = Record<RlRegime, RegimeHeadSnapshot>;
 
 interface ReplayEntry {
   features: number[];
@@ -203,6 +236,7 @@ interface ReplayEntry {
   reward: number;
   nextFeatures: number[];
   done: boolean;
+  regime: RlRegime;
 }
 
 export class RlTrainer {
@@ -215,9 +249,11 @@ export class RlTrainer {
     this.replayBuffer = [];
     this.targetWeights = [];
     this.targetBias = [];
+    this.targetRegimeHeads = undefined;
     this.targetEpisode = -1;
     const cfg = { ...defaultTrainerOptions, ...options };
     const model = isCompatiblePolicy(initialModel) ? clonePolicy(initialModel) : createEmptyRlPolicy();
+    configureRegimeHeads(model, cfg.regimeSplitEnabled);
     const grouped = groupBySymbol(candles);
     const keys = [...grouped.keys()];
     if (keys.length === 0) {
@@ -249,6 +285,7 @@ export class RlTrainer {
     let bestBias = [...model.qBias];
     let episodesRan = 0;
     let stagnantEpisodes = 0;
+    const qGapSamples: number[] = [];
     const episodeCount = Math.max(1, cfg.episodes - 1);
     for (let episode = 0; episode < cfg.episodes; episode += 1) {
       const epsilon = linearSchedule(cfg.epsilonStart, cfg.epsilonEnd, episode, episodeCount);
@@ -259,7 +296,7 @@ export class RlTrainer {
         episodeCount,
       );
       model.epsilon = epsilon;
-      const telemetry = this.runTrainingEpisode(grouped, keys, model, cfg, epsilon, learningRate, episode, regimePlans);
+      const telemetry = this.runTrainingEpisode(grouped, keys, model, cfg, epsilon, learningRate, episode, regimePlans, qGapSamples);
       telemetryRows.push(telemetry);
       episodeRewards.push(telemetry.totalReward);
       episodesRan += 1;
@@ -289,6 +326,10 @@ export class RlTrainer {
     model.qBias = bestBias;
     model.epsilon = 0;
     const inSample = this.evaluate(candles, model, cfg);
+    const qGapStats = percentileStats(qGapSamples);
+    if (cfg.regimeSplitEnabled) {
+      consolidateRegimeHeads(model);
+    }
     return {
       model,
       training: {
@@ -297,6 +338,9 @@ export class RlTrainer {
         finalEpisodeReward: lastReward,
         avgEpisodeReward: avg(episodeRewards),
         ...aggregateEpisodeTelemetry(telemetryRows),
+        qGapP50: qGapStats?.p50,
+        qGapP75: qGapStats?.p75,
+        qGapP90: qGapStats?.p90,
       },
       inSample,
     };
@@ -431,6 +475,7 @@ export class RlTrainer {
   // Using live weights for maxNext causes instability ("chasing a moving target").
   private targetWeights: number[][] = [];
   private targetBias: number[] = [];
+  private targetRegimeHeads?: RegimeHeadMap;
   private targetEpisode = -1;
 
   private runTrainingEpisode(
@@ -442,11 +487,13 @@ export class RlTrainer {
     learningRate: number,
     episodeIndex: number,
     regimePlans: Map<string, RegimeWindowPlan>,
+    qGapSamples: number[],
   ): RlEpisodeTelemetry {
     // Update target network every N episodes.
     if (episodeIndex === 0 || episodeIndex - this.targetEpisode >= TARGET_NETWORK_UPDATE_FREQ) {
       this.targetWeights = cloneWeights(model.qWeights);
       this.targetBias = [...model.qBias];
+      this.targetRegimeHeads = cfg.regimeSplitEnabled ? cloneRegimeHeads(model.regimeHeads) : undefined;
       this.targetEpisode = episodeIndex;
     }
 
@@ -478,6 +525,7 @@ export class RlTrainer {
         entryPrice: 0,
         entryTs: 0,
         entryBar: startIdx,
+        lastFlipBar: 0,
         pendingAction: [],
       };
       let lastPositionChangeBar = startIdx;
@@ -491,29 +539,71 @@ export class RlTrainer {
           positionAge: decisionPositionAge,
           lastTurnoverAge: decisionLastTurnoverAge,
         });
-        const actionIdx = chooseAction(features, model, epsilon);
-        const action = actionIndexToValue(actionIdx);
-        if (action === 1) buyDecisions += 1;
-        else if (action === -1) sellDecisions += 1;
+        const selection = selectActionWithConfidence({
+          features,
+          model,
+          epsilon,
+          confidenceGateEnabled: false,
+          confidenceQGap: cfg.confidenceQGap,
+        });
+        qGapSamples.push(selection.qGap);
+        const decisionValue = actionIndexToValue(selection.actionIdx);
+        if (decisionValue === 1) buyDecisions += 1;
+        else if (decisionValue === -1) sellDecisions += 1;
         else holdDecisions += 1;
+        const gatedActionValue = decisionValue;
+        const gatedActionIdx = selection.actionIdx;
         state.pendingAction.push({
           executeAt: i + Math.max(0, cfg.latencyBars),
-          action,
-          actionIdx,
+          action: gatedActionValue,
+          actionIdx: gatedActionIdx,
           features,
+          regime: selection.regime,
+          qGap: selection.qGap,
         });
 
         let costs = 0;
         let turnoverApplied = 0;
-        let executedDecision: { actionIdx: number; action: -1 | 0 | 1; features: number[] } | null = null;
+        let executedDecision: { actionIdx: number; action: -1 | 0 | 1; features: number[]; regime: RlRegime } | null = null;
         while (state.pendingAction.length > 0 && state.pendingAction[0].executeAt <= i) {
           const update = state.pendingAction.shift();
           if (!update) break;
-          executedDecision = { actionIdx: update.actionIdx, action: update.action, features: update.features };
-          const turnover = Math.abs(update.action - state.position);
+          let effectiveAction = update.action;
+          let effectiveActionIdx = update.actionIdx;
+          let turnover = Math.abs(effectiveAction - state.position);
+          if (turnover > 0) {
+            const confidenceGateTriggered =
+              cfg.confidenceGateEnabled &&
+              Number.isFinite(update.qGap) &&
+              update.qGap < cfg.confidenceQGap;
+            if (confidenceGateTriggered) {
+              effectiveAction = state.position;
+              effectiveActionIdx = actionValueToIndex(effectiveAction);
+              turnover = 0;
+            }
+            const positionAge = state.position === 0 ? 0 : Math.max(0, i - state.entryBar);
+            const minHold = Math.max(0, Math.floor(cfg.minHoldBars));
+            if (state.position !== 0 && positionAge < minHold) {
+              effectiveAction = state.position;
+              effectiveActionIdx = actionValueToIndex(effectiveAction);
+              turnover = 0;
+            }
+            const flipCooldown = Math.max(0, Math.floor(cfg.flipCooldownBars));
+            if (turnover > 0 && state.lastFlipBar > 0 && i - state.lastFlipBar < flipCooldown) {
+              effectiveAction = state.position;
+              effectiveActionIdx = actionValueToIndex(effectiveAction);
+              turnover = 0;
+            }
+          }
+          executedDecision = {
+            actionIdx: effectiveActionIdx,
+            action: effectiveAction,
+            features: update.features,
+            regime: update.regime,
+          };
           if (turnover <= 0) continue;
           turnoverApplied += turnover;
-          const notional = equity * (cfg.riskPerTradePct / 100) * Math.max(0.2, Math.abs(update.action));
+          const notional = equity * (cfg.riskPerTradePct / 100) * Math.max(0.2, Math.abs(effectiveAction));
           const execCosts = computeExecutionCosts({
             notionalUsd: notional,
             turnover,
@@ -524,7 +614,7 @@ export class RlTrainer {
             macdHistNorm: features[5],
           });
           costs += execCosts.totalCost;
-          state.position = update.action;
+          state.position = effectiveAction;
           if (state.position !== 0) {
             state.entryPrice = series[i].close;
             state.entryTs = series[i].openTime;
@@ -533,6 +623,9 @@ export class RlTrainer {
             state.entryPrice = 0;
             state.entryTs = 0;
             state.entryBar = i;
+          }
+          if (turnover === 2) {
+            state.lastFlipBar = i;
           }
         }
 
@@ -599,6 +692,7 @@ export class RlTrainer {
             reward,
             nextFeatures,
             done: isDone,
+            regime: executedDecision.regime,
           });
           if (this.replayBuffer.length > REPLAY_BUFFER_SIZE) {
             this.replayBuffer.shift();
@@ -612,6 +706,7 @@ export class RlTrainer {
             reward,
             nextFeatures,
             isDone,
+            executedDecision.regime,
             cfg,
             learningRate,
           );
@@ -620,7 +715,17 @@ export class RlTrainer {
           if (this.replayBuffer.length >= REPLAY_BATCH_SIZE) {
             const batch = sampleBatch(this.replayBuffer, REPLAY_BATCH_SIZE);
             for (const entry of batch) {
-              this.applyTdUpdate(model, entry.features, entry.actionIdx, entry.reward, entry.nextFeatures, entry.done, cfg, learningRate * 0.5);
+              this.applyTdUpdate(
+                model,
+                entry.features,
+                entry.actionIdx,
+                entry.reward,
+                entry.nextFeatures,
+                entry.done,
+                entry.regime,
+                cfg,
+                learningRate * 0.5,
+              );
             }
           }
         }
@@ -636,6 +741,7 @@ export class RlTrainer {
       buyDecisions,
       sellDecisions,
       holdDecisions,
+      qGapSamples: [],
     };
   }
 
@@ -646,21 +752,32 @@ export class RlTrainer {
     reward: number,
     nextFeatures: number[],
     done: boolean,
+    regime: RlRegime,
     cfg: RlTrainerOptions,
     learningRate: number,
   ): void {
-    const qNow = scoreActions(features, model);
+    const useRegimeSplit = cfg.regimeSplitEnabled && !!model.regimeHeads && !!this.targetRegimeHeads;
+    const qNow = useRegimeSplit ? scoreActionsForRegime(features, model, regime) : scoreActions(features, model);
+    const nextRegime = useRegimeSplit ? classifyRegime(nextFeatures, model.featureNames) : regime;
     // Use frozen TARGET weights for next-state value to stabilise learning.
-    const qNextTarget = scoreActionsWithWeights(nextFeatures, this.targetWeights, this.targetBias);
+    const targetHead = useRegimeSplit ? this.targetRegimeHeads?.[nextRegime] : undefined;
+    const qNextTarget = targetHead
+      ? scoreActionsWithWeights(nextFeatures, targetHead.qWeights, targetHead.qBias)
+      : scoreActionsWithWeights(nextFeatures, this.targetWeights, this.targetBias);
     const maxNext = done ? 0 : Math.max(...qNextTarget);
     const td = reward + cfg.gamma * maxNext - qNow[actionIdx];
     // Tighter TD clip [-2, 2] since rewards are now normalised ~[-0.01, 0.01].
     const clippedTd = clamp(td, -2, 2);
-    const wRow = model.qWeights[actionIdx];
+    const activeHead = useRegimeSplit ? model.regimeHeads?.[regime] : undefined;
+    const wRow = activeHead?.qWeights[actionIdx] ?? model.qWeights[actionIdx];
     for (let j = 0; j < features.length; j += 1) {
       wRow[j] += learningRate * clippedTd * features[j];
     }
-    model.qBias[actionIdx] += learningRate * clippedTd;
+    if (activeHead) {
+      activeHead.qBias[actionIdx] += learningRate * clippedTd;
+    } else {
+      model.qBias[actionIdx] += learningRate * clippedTd;
+    }
   }
 }
 
@@ -696,6 +813,7 @@ export const simulatePolicy = (
       entryPrice: 0,
       entryTs: 0,
       entryBar: 0,
+      lastFlipBar: 0,
       pendingAction: [],
     });
   }
@@ -727,13 +845,22 @@ export const simulatePolicy = (
         positionAge,
         lastTurnoverAge,
       });
-      const actionIdx = greedyActionIndex(features, model);
-      const action = actionIndexToValue(actionIdx);
+      const selection = selectActionWithConfidence({
+        features,
+        model,
+        epsilon: 0,
+        confidenceGateEnabled: false,
+        confidenceQGap: cfg.confidenceQGap,
+      });
+      const gatedActionValue = actionIndexToValue(selection.actionIdx);
+      const gatedActionIdx = selection.actionIdx;
       state.pendingAction.push({
         executeAt: i + Math.max(1, cfg.latencyBars),
-        action,
-        actionIdx,
+        action: gatedActionValue,
+        actionIdx: gatedActionIdx,
         features,
+        regime: selection.regime,
+        qGap: selection.qGap,
       });
 
       let costs = 0;
@@ -741,14 +868,36 @@ export const simulatePolicy = (
       while (state.pendingAction.length > 0 && state.pendingAction[0].executeAt <= i) {
         const update = state.pendingAction.shift();
         if (!update) break;
-        const turnover = Math.abs(update.action - state.position);
+        let effectiveAction = update.action;
+        let turnover = Math.abs(effectiveAction - state.position);
+        if (turnover > 0) {
+          const confidenceGateTriggered =
+            cfg.confidenceGateEnabled &&
+            Number.isFinite(update.qGap) &&
+            update.qGap < cfg.confidenceQGap;
+          if (confidenceGateTriggered) {
+            effectiveAction = state.position;
+            turnover = 0;
+          }
+          const positionAge = state.position === 0 ? 0 : Math.max(0, i - state.entryBar);
+          const minHold = Math.max(0, Math.floor(cfg.minHoldBars));
+          if (state.position !== 0 && positionAge < minHold) {
+            effectiveAction = state.position;
+            turnover = 0;
+          }
+          const flipCooldown = Math.max(0, Math.floor(cfg.flipCooldownBars));
+          if (turnover > 0 && state.lastFlipBar > 0 && i - state.lastFlipBar < flipCooldown) {
+            effectiveAction = state.position;
+            turnover = 0;
+          }
+        }
         if (turnover <= 0) continue;
         turnoverApplied += turnover;
         if (state.position !== 0) {
           const closed = closeTrade(state, series[i], equity * (cfg.riskPerTradePct / 100));
           if (closed) trades.push(closed);
         }
-        const notional = equity * (cfg.riskPerTradePct / 100) * Math.max(0.2, Math.abs(update.action));
+        const notional = equity * (cfg.riskPerTradePct / 100) * Math.max(0.2, Math.abs(effectiveAction));
         const execCosts = computeExecutionCosts({
           notionalUsd: notional,
           turnover,
@@ -759,7 +908,7 @@ export const simulatePolicy = (
           macdHistNorm: features[5],
         });
         costs += execCosts.totalCost;
-        state.position = update.action;
+        state.position = effectiveAction;
         if (state.position !== 0) {
           state.entryPrice = series[i].close;
           state.entryTs = series[i].openTime;
@@ -768,6 +917,9 @@ export const simulatePolicy = (
           state.entryPrice = 0;
           state.entryTs = 0;
           state.entryBar = i;
+        }
+        if (turnover === 2) {
+          state.lastFlipBar = i;
         }
       }
       if (turnoverApplied > 0) {
@@ -967,9 +1119,59 @@ const clonePolicy = (model: RlLinearQPolicyModel): RlLinearQPolicyModel => ({
   qWeights: model.qWeights.map(row => [...row]),
   qBias: [...model.qBias],
   epsilon: model.epsilon,
+  regimeHeads: cloneRegimeHeads(model.regimeHeads),
 });
 
 const cloneWeights = (weights: number[][]): number[][] => weights.map(row => [...row]);
+
+const cloneRegimeHead = (head: RegimeHeadSnapshot): RegimeHeadSnapshot => ({
+  qWeights: cloneWeights(head.qWeights),
+  qBias: [...head.qBias],
+});
+
+const isValidRegimeHead = (head: RegimeHeadSnapshot | undefined, featureCount: number): head is RegimeHeadSnapshot => {
+  if (!head) return false;
+  if (!Array.isArray(head.qWeights) || head.qWeights.length !== 3) return false;
+  if (!Array.isArray(head.qBias) || head.qBias.length !== 3) return false;
+  return head.qWeights.every(row => Array.isArray(row) && row.length === featureCount);
+};
+
+const configureRegimeHeads = (model: RlLinearQPolicyModel, enabled: boolean): void => {
+  if (!enabled) {
+    model.regimeHeads = undefined;
+    return;
+  }
+  const featureCount = model.featureNames.length;
+  const base: RegimeHeadSnapshot = {
+    qWeights: cloneWeights(model.qWeights),
+    qBias: [...model.qBias],
+  };
+  const existing = model.regimeHeads;
+  const trend = isValidRegimeHead(existing?.trend, featureCount) ? cloneRegimeHead(existing!.trend) : cloneRegimeHead(base);
+  const mean = isValidRegimeHead(existing?.mean, featureCount) ? cloneRegimeHead(existing!.mean) : cloneRegimeHead(base);
+  model.regimeHeads = { trend, mean };
+};
+
+const cloneRegimeHeads = (heads?: RlLinearQPolicyModel['regimeHeads']): RegimeHeadMap | undefined => {
+  if (!heads) return undefined;
+  return {
+    trend: cloneRegimeHead(heads.trend),
+    mean: cloneRegimeHead(heads.mean),
+  };
+};
+
+const consolidateRegimeHeads = (model: RlLinearQPolicyModel): void => {
+  if (!model.regimeHeads) return;
+  const featureCount = model.featureNames.length;
+  const { trend, mean } = model.regimeHeads;
+  if (!isValidRegimeHead(trend, featureCount) || !isValidRegimeHead(mean, featureCount)) return;
+  const averagedWeights = trend.qWeights.map((row, i) =>
+    row.map((value, j) => (value + (mean.qWeights[i]?.[j] ?? 0)) / 2),
+  );
+  const averagedBias = trend.qBias.map((value, i) => (value + (mean.qBias[i] ?? 0)) / 2);
+  model.qWeights = averagedWeights;
+  model.qBias = averagedBias;
+};
 
 const shuffle = <T>(items: T[]): T[] => {
   const arr = [...items];
@@ -1129,6 +1331,16 @@ const percentile = (values: number[], p: number): number => {
   const sorted = [...values].sort((a, b) => a - b);
   const pos = Math.max(0, Math.min(sorted.length - 1, Math.floor((sorted.length - 1) * p)));
   return sorted[pos];
+};
+
+const percentileStats = (values: number[]): { p50: number; p75: number; p90: number } | null => {
+  if (values.length === 0) return null;
+  const sorted = [...values].sort((a, b) => a - b);
+  return {
+    p50: sorted[Math.floor(sorted.length * 0.5)] ?? 0,
+    p75: sorted[Math.floor(sorted.length * 0.75)] ?? 0,
+    p90: sorted[Math.floor(sorted.length * 0.9)] ?? 0,
+  };
 };
 
 const shapePnlReward = (pnlUsd: number): number => {

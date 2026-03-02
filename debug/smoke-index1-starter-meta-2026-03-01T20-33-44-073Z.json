@@ -1,0 +1,17 @@
+{
+  "runId": "2026-03-01T20-33-44-073Z",
+  "index": 1,
+  "profileId": "smoke-index1-port8618-2026-03-01T20-33-44-073Z",
+  "port": 8618,
+  "pid": 16724,
+  "logPath": "c:\\Users\\Nitro\\Desktop\\tardes\\repo_hydra_audit\\debug\\smoke-index1-port8618-2026-03-01T20-33-44-073Z.log",
+  "reportPath": "c:\\Users\\Nitro\\Desktop\\tardes\\repo_hydra_audit\\debug\\shadow-report-smoke-index1-port8618-2026-03-01T20-33-44-073Z.json",
+  "profileMetaPath": "c:\\Users\\Nitro\\Desktop\\tardes\\repo_hydra_audit\\debug\\runtime-profile-smoke-index1-port8618-2026-03-01T20-33-44-073Z.json",
+  "indexBinding": {
+    "qGap": 0.008,
+    "minHoldBars": 12,
+    "flipCooldownBars": 8,
+    "source": "debug/shadow-report-screening-top3.json index=1"
+  },
+  "startedAt": "2026-03-01T20:33:44.088Z"
+}

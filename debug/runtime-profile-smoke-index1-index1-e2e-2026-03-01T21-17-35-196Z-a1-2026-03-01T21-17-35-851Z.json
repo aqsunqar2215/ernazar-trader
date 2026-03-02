@@ -1,0 +1,26 @@
+{
+  "profileId": "smoke-index1-index1-e2e-2026-03-01T21-17-35-196Z-a1-2026-03-01T21-17-35-851Z",
+  "startedAt": "2026-03-01T21:17:35.907Z",
+  "endedAt": "2026-03-01T21:45:01.102Z",
+  "exitCode": 2,
+  "signal": null,
+  "baseUrl": "http://127.0.0.1:8618",
+  "port": 8618,
+  "dbPath": "debug\\db\\trader-smoke-index1-index1-e2e-2026-03-01T21-17-35-196Z-a1-2026-03-01T21-17-35-851Z.db",
+  "reportPath": "debug\\shadow-report-smoke-index1-index1-e2e-2026-03-01T21-17-35-196Z-a1-2026-03-01T21-17-35-851Z.json",
+  "cleanupDb": false,
+  "env": {
+    "MARKET_MODE": "mock",
+    "ROLLOUT_MODE": "paper",
+    "PAPER_ONLY": "true",
+    "MOCK_CLOCK_OFFSET_MINUTES": "7200",
+    "RL_CONFIDENCE_GATE_ENABLED": "false",
+    "RL_CONFIDENCE_Q_GAP": "0.008",
+    "RL_MIN_HOLD_BARS": "12",
+    "RL_FLIP_COOLDOWN_BARS": "8",
+    "TARGET_TRADES": "100",
+    "POLL_MS": "5000",
+    "MAX_WAIT_MS": "2400000",
+    "RL_SHADOW_GATE_REQUIRED_TIER": null
+  }
+}

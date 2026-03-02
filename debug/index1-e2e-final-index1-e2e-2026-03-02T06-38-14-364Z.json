@@ -1,0 +1,33 @@
+{
+  "status": "completed",
+  "pipelineId": "index1-e2e-2026-03-02T06-38-14-364Z",
+  "smokeFinalPath": "c:\\Users\\Nitro\\Desktop\\tardes\\repo_hydra_audit\\debug\\smoke-index1-final-index1-e2e-2026-03-02T06-38-14-364Z.json",
+  "paperMeta": {
+    "status": "started",
+    "runId": "2026-03-02T07-06-31-551Z",
+    "port": 8625,
+    "pid": 25840,
+    "dbPath": "./data/trader-index1-paper-2026-03-02T07-06-31-551Z.db",
+    "logPath": "c:\\Users\\Nitro\\Desktop\\tardes\\repo_hydra_audit\\debug\\live-paper-runtime-index1-2026-03-02T07-06-31-551Z.log",
+    "statusPath": "c:\\Users\\Nitro\\Desktop\\tardes\\repo_hydra_audit\\debug\\live-paper-status-index1-2026-03-02T07-06-31-551Z.jsonl",
+    "startedAt": "2026-03-02T07:06:31.780Z",
+    "profile": "index1-paper-binance",
+    "overrides": {
+      "PORT": "8625",
+      "DB_PATH": "./data/trader-index1-paper-2026-03-02T07-06-31-551Z.db",
+      "COOLDOWN_LOSS_STREAK": "999",
+      "MARKET_MODE": "binance",
+      "ROLLOUT_MODE": "paper",
+      "PAPER_ONLY": "true",
+      "RL_CONFIDENCE_GATE_ENABLED": "false",
+      "RL_CONFIDENCE_Q_GAP": "0.008",
+      "RL_MIN_HOLD_BARS": "12",
+      "RL_FLIP_COOLDOWN_BARS": "8"
+    }
+  },
+  "comparisonOutPath": "c:\\Users\\Nitro\\Desktop\\tardes\\repo_hydra_audit\\debug\\index1-vs-baseline-index1-e2e-2026-03-02T06-38-14-364Z.json",
+  "promoteTinyLive": false,
+  "tinyLive": null,
+  "logPath": "c:\\Users\\Nitro\\Desktop\\tardes\\repo_hydra_audit\\debug\\index1-e2e-index1-e2e-2026-03-02T06-38-14-364Z.log",
+  "finishedAt": "2026-03-02T08:36:38.148Z"
+}

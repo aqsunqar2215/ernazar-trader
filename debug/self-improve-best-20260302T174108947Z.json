@@ -1,0 +1,38 @@
+{
+  "score": 220,
+  "candidate": {
+    "RL_CONFIDENCE_Q_GAP": "0.008",
+    "RL_CONFIDENCE_Q_GAP_ADAPTIVE_SCALE": "0.7",
+    "RL_CONFIDENCE_Q_GAP_ADAPTIVE_QUANTILE": "0.55",
+    "RL_MIN_HOLD_BARS": "2",
+    "RL_FLIP_COOLDOWN_BARS": "1",
+    "RL_MAX_POSITION_BARS": "6",
+    "MAX_ORDERS_PER_MINUTE": "40",
+    "RL_SHADOW_GATE_MIN_NET_PNL_USD": "-1"
+  },
+  "summary": {
+    "iteration": 1,
+    "score": 220,
+    "exitCode": 2,
+    "overallPassed": false,
+    "gatePassed": false,
+    "paperSanityPassed": true,
+    "rlTrades": 0,
+    "rlNetPnlUsd": 0,
+    "rlMaxDrawdownPct": 0,
+    "paperNetPnlUsd": 0,
+    "paperMaxDrawdownPct": 0,
+    "candidate": {
+      "RL_CONFIDENCE_Q_GAP": "0.008",
+      "RL_CONFIDENCE_Q_GAP_ADAPTIVE_SCALE": "0.7",
+      "RL_CONFIDENCE_Q_GAP_ADAPTIVE_QUANTILE": "0.55",
+      "RL_MIN_HOLD_BARS": "2",
+      "RL_FLIP_COOLDOWN_BARS": "1",
+      "RL_MAX_POSITION_BARS": "6",
+      "MAX_ORDERS_PER_MINUTE": "40",
+      "RL_SHADOW_GATE_MIN_NET_PNL_USD": "-1"
+    },
+    "reportPath": "debug/shadow-report-self-improve-20260302T174108947Z-i01.json",
+    "readError": null
+  }
+}

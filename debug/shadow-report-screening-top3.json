@@ -1,0 +1,95 @@
+[
+  {
+    "qGap": 0.009,
+    "minHold": 12,
+    "flipCooldown": 8,
+    "reportPath": "debug/shadow-report-screening-q0p009-h12-f8.json",
+    "screeningTradesPerMinute": 0.3351393621180808,
+    "expectedMinutesTo100": 298.38333333333327,
+    "timeoutMinutes": 120.0,
+    "error": null,
+    "reachedTarget": false,
+    "gateReason": "gate_timeout",
+    "paperSanityPassed": true,
+    "tradesPerMinute": 0.3351393621180808,
+    "profitFactor": 50,
+    "netPnlUsd": 11.73146491001171,
+    "maxDrawdownPct": 0.028276742325591523,
+    "guardBlocks": {
+      "confidence": 103,
+      "minHold": 0,
+      "flipCooldown": 0,
+      "total": 103,
+      "confidenceTriggered": 251,
+      "actionsBeforeGuards": 107,
+      "actionsAfterGuards": 4
+    },
+    "qGapStats": {
+      "p50": 0.003656618354188637,
+      "p75": 0.0066959303940001685,
+      "p90": 0.00961470994359355
+    }
+  },
+  {
+    "qGap": 0.008,
+    "minHold": 12,
+    "flipCooldown": 8,
+    "reportPath": "debug/shadow-report-screening-q0p008-h12-f8.json",
+    "screeningTradesPerMinute": 0.3353435315027303,
+    "expectedMinutesTo100": 298.20166666666665,
+    "timeoutMinutes": 120.0,
+    "error": null,
+    "reachedTarget": false,
+    "gateReason": "gate_timeout",
+    "paperSanityPassed": true,
+    "tradesPerMinute": 0.3353435315027303,
+    "profitFactor": 50,
+    "netPnlUsd": 10.324833704366029,
+    "maxDrawdownPct": 0.006738785549364363,
+    "guardBlocks": {
+      "confidence": 80,
+      "minHold": 0,
+      "flipCooldown": 0,
+      "total": 80,
+      "confidenceTriggered": 237,
+      "actionsBeforeGuards": 84,
+      "actionsAfterGuards": 4
+    },
+    "qGapStats": {
+      "p50": 0.003415341342535891,
+      "p75": 0.005990701095915166,
+      "p90": 0.009576660660848044
+    }
+  },
+  {
+    "qGap": 0.006,
+    "minHold": 5,
+    "flipCooldown": 8,
+    "reportPath": "debug/shadow-report-screening-q0p006-h5-f8.json",
+    "screeningTradesPerMinute": 0.6700391972930416,
+    "expectedMinutesTo100": 149.245,
+    "timeoutMinutes": 120.0,
+    "error": null,
+    "reachedTarget": false,
+    "gateReason": "gate_timeout",
+    "paperSanityPassed": true,
+    "tradesPerMinute": 0.6700391972930416,
+    "profitFactor": 50,
+    "netPnlUsd": 8.806902636100858,
+    "maxDrawdownPct": 0.0202297975752321,
+    "guardBlocks": {
+      "confidence": 102,
+      "minHold": 0,
+      "flipCooldown": 0,
+      "total": 102,
+      "confidenceTriggered": 223,
+      "actionsBeforeGuards": 108,
+      "actionsAfterGuards": 5
+    },
+    "qGapStats": {
+      "p50": 0.0030273574968491673,
+      "p75": 0.005060503414171719,
+      "p90": 0.007877410286420639
+    }
+  }
+]

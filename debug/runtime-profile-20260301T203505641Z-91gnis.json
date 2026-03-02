@@ -1,0 +1,26 @@
+{
+  "profileId": "20260301T203505641Z-91gnis",
+  "startedAt": "2026-03-01T20:35:05.644Z",
+  "endedAt": "2026-03-01T20:43:57.644Z",
+  "exitCode": 2,
+  "signal": null,
+  "baseUrl": "http://127.0.0.1:8217",
+  "port": 8217,
+  "dbPath": "debug/db/trader-20260301T203505641Z-91gnis.db",
+  "reportPath": "debug/shadow-report-20260301T203505641Z-91gnis.json",
+  "cleanupDb": false,
+  "env": {
+    "MARKET_MODE": null,
+    "ROLLOUT_MODE": null,
+    "PAPER_ONLY": null,
+    "MOCK_CLOCK_OFFSET_MINUTES": null,
+    "RL_CONFIDENCE_GATE_ENABLED": null,
+    "RL_CONFIDENCE_Q_GAP": null,
+    "RL_MIN_HOLD_BARS": null,
+    "RL_FLIP_COOLDOWN_BARS": null,
+    "TARGET_TRADES": null,
+    "POLL_MS": null,
+    "MAX_WAIT_MS": null,
+    "RL_SHADOW_GATE_REQUIRED_TIER": null
+  }
+}

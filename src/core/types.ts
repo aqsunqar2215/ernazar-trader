@@ -34,7 +34,23 @@ export interface Signal {
   action: SignalAction;
   strength: number;
   reason: string;
+  policy?: 'rl' | 'supervised' | 'momentum';
+  qGap?: number;
+  regime?: 'trend' | 'mean';
+  gateTriggered?: boolean;
   timestamp: number;
+}
+
+export interface ShadowGateStatus {
+  passed: boolean;
+  reason: string;
+  tier?: number;
+  passedTier?: number;
+  currentTier?: number;
+  trades?: number;
+  elapsedMs?: number;
+  kpi?: Record<string, unknown>;
+  limits?: Record<string, unknown>;
 }
 
 export interface RiskDecision {
@@ -129,6 +145,7 @@ export interface AuditEvent {
     | 'risk_decision'
     | 'order_submitted'
     | 'order_result'
+    | 'rl_execution_guard_blocked'
     | 'model_promotion'
     | 'rollout_stage_change'
     | 'alert';

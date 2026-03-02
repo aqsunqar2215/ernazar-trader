@@ -1,0 +1,26 @@
+{
+  "profileId": "live-self-improve-20260302T174221445Z-i01",
+  "startedAt": "2026-03-02T17:42:21.489Z",
+  "endedAt": "2026-03-02T17:43:08.094Z",
+  "exitCode": 2,
+  "signal": null,
+  "baseUrl": "http://127.0.0.1:8652",
+  "port": 8652,
+  "dbPath": "./debug/db/trader-live-short-adaptive-fast.db",
+  "reportPath": "debug/shadow-report-self-improve-20260302T174221445Z-i01.json",
+  "cleanupDb": false,
+  "env": {
+    "MARKET_MODE": "binance",
+    "ROLLOUT_MODE": "paper",
+    "PAPER_ONLY": "true",
+    "MOCK_CLOCK_OFFSET_MINUTES": null,
+    "RL_CONFIDENCE_GATE_ENABLED": "true",
+    "RL_CONFIDENCE_Q_GAP": "0.008",
+    "RL_MIN_HOLD_BARS": "2",
+    "RL_FLIP_COOLDOWN_BARS": "1",
+    "TARGET_TRADES": "1",
+    "POLL_MS": "3000",
+    "MAX_WAIT_MS": "45000",
+    "RL_SHADOW_GATE_REQUIRED_TIER": "1"
+  }
+}

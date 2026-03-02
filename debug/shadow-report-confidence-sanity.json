@@ -1,0 +1,460 @@
+{
+  "baseUrl": "http://127.0.0.1:8080",
+  "runtimeMode": "spawned",
+  "targetTrades": 5,
+  "reachedTarget": true,
+  "elapsedMs": 94550,
+  "maxWaitMs": 300000,
+  "gateTimeoutMs": 86400000,
+  "gate": {
+    "passed": false,
+    "reason": "kpi_fail",
+    "kpi": {
+      "tradesPerMinute": 3.1730921783277806,
+      "profitFactor": 2.2706643596181366,
+      "netPnlUsd": 3.5148111561939004,
+      "maxDrawdownPct": 0.030436126921281562
+    },
+    "limits": {
+      "tradesPerMinute": 4,
+      "profitFactor": 1.12,
+      "netPnlUsd": 0,
+      "maxDrawdownPct": 0.01
+    }
+  },
+  "paperSanity": {
+    "passed": true,
+    "reason": "ok",
+    "killSwitchEnabled": false,
+    "criticalAlertsCount": 0
+  },
+  "overallPassed": false,
+  "alertWindow": {
+    "startMs": 1772261115122,
+    "endMs": 1772261155352,
+    "startIso": "2026-02-28T06:45:15.122Z",
+    "endIso": "2026-02-28T06:45:55.352Z"
+  },
+  "criticalAlerts": [],
+  "final": {
+    "ts": "2026-02-28T06:45:55.327Z",
+    "rlTrades": 5,
+    "rlWinRate": 0.8,
+    "rlProfitFactor": 2.2706643596181366,
+    "rlNetPnlUsd": 3.5148111561939004,
+    "rlMaxDrawdownPct": 0.030436126921281562,
+    "rlQGapStats": {
+      "p50": 0.004512744286027992,
+      "p75": 0.007562006838562341,
+      "p90": 0.009913187116835226
+    },
+    "runtimeStage": "paper",
+    "runtimePaperTrades": 5,
+    "runtimePaperProfitFactor": 50
+  },
+  "guardBlocks": {
+    "confidence": 0,
+    "minHold": 3,
+    "flipCooldown": 0,
+    "confidenceTriggered": 0,
+    "total": 3,
+    "actionsBeforeGuards": 14,
+    "actionsAfterGuards": 11,
+    "confidenceGateEnabled": false,
+    "confidenceQGap": 1
+  },
+  "sampleStats": {
+    "firstTradeTs": "2026-02-28T06:45:15.122Z",
+    "firstTradeRlTrades": 1,
+    "maxObservedDrawdownPct": 0.031088965315549427,
+    "minObservedNetPnlUsd": -0.09378039715193154,
+    "maxObservedNetPnlUsd": 6.3568346255560755,
+    "elapsedMinutes": 1.57575,
+    "tradesPerMinute": 3.1730921783277806
+  },
+  "samplesCount": 48,
+  "lastSamples": [
+    {
+      "ts": "2026-02-28T06:45:47.287Z",
+      "rlTrades": 3,
+      "rlWinRate": 1,
+      "rlProfitFactor": 50,
+      "rlNetPnlUsd": 5.964671069177712,
+      "rlMaxDrawdownPct": 0.0059535893657817465,
+      "rlQGapStats": {
+        "p50": 0.00564601933100381,
+        "p75": 0.007908921471508373,
+        "p90": 0.010394000402765322
+      },
+      "runtimeStage": "paper",
+      "runtimePaperTrades": 4,
+      "runtimePaperProfitFactor": 50
+    },
+    {
+      "ts": "2026-02-28T06:45:49.303Z",
+      "rlTrades": 3,
+      "rlWinRate": 1,
+      "rlProfitFactor": 50,
+      "rlNetPnlUsd": 3.8346784096211195,
+      "rlMaxDrawdownPct": 0.02723955147494574,
+      "rlQGapStats": {
+        "p50": 0.005644792173206847,
+        "p75": 0.007668495085576682,
+        "p90": 0.010199504981648205
+      },
+      "runtimeStage": "paper",
+      "runtimePaperTrades": 4,
+      "runtimePaperProfitFactor": 50
+    },
+    {
+      "ts": "2026-02-28T06:45:51.307Z",
+      "rlTrades": 4,
+      "rlWinRate": 0.75,
+      "rlProfitFactor": 1.7272810701530195,
+      "rlNetPnlUsd": 3.4494844878227013,
+      "rlMaxDrawdownPct": 0.031088965315549427,
+      "rlQGapStats": {
+        "p50": 0.005584896449431276,
+        "p75": 0.007668495085576682,
+        "p90": 0.010199504981648205
+      },
+      "runtimeStage": "paper",
+      "runtimePaperTrades": 4,
+      "runtimePaperProfitFactor": 50
+    },
+    {
+      "ts": "2026-02-28T06:45:53.322Z",
+      "rlTrades": 4,
+      "rlWinRate": 0.75,
+      "rlProfitFactor": 1.7272810701530195,
+      "rlNetPnlUsd": 3.564870870248342,
+      "rlMaxDrawdownPct": 0.02993585797820443,
+      "rlQGapStats": {
+        "p50": 0.004920406197811894,
+        "p75": 0.007666790260166603,
+        "p90": 0.010199504981648205
+      },
+      "runtimeStage": "paper",
+      "runtimePaperTrades": 4,
+      "runtimePaperProfitFactor": 50
+    },
+    {
+      "ts": "2026-02-28T06:45:55.327Z",
+      "rlTrades": 5,
+      "rlWinRate": 0.8,
+      "rlProfitFactor": 2.2706643596181366,
+      "rlNetPnlUsd": 3.5148111561939004,
+      "rlMaxDrawdownPct": 0.030436126921281562,
+      "rlQGapStats": {
+        "p50": 0.004512744286027992,
+        "p75": 0.007562006838562341,
+        "p90": 0.009913187116835226
+      },
+      "runtimeStage": "paper",
+      "runtimePaperTrades": 5,
+      "runtimePaperProfitFactor": 50
+    }
+  ],
+  "runtimeData": {
+    "alertsCount": 179,
+    "auditEventsCount": 2000,
+    "fillsCount": 82,
+    "ordersCount": 50,
+    "equityPoints": 570,
+    "alertsTail": [
+      {
+        "id": "9f8d09cc-2f2c-4edd-93df-f1f1f6ccc1f4",
+        "level": "critical",
+        "type": "risk_limit",
+        "message": "backtest gate failed: failed gate (profitFactor/sharpe/drawdown)",
+        "timestamp": 1771797226705,
+        "meta": {}
+      },
+      {
+        "id": "c5cb717b-b422-40fb-99da-23b24b4d4e52",
+        "level": "critical",
+        "type": "risk_limit",
+        "message": "backtest gate failed: failed gate (profitFactor/sharpe/drawdown)",
+        "timestamp": 1771797108416,
+        "meta": {}
+      },
+      {
+        "id": "bd69fbb2-468b-40a1-91fa-7815ef2b4d6b",
+        "level": "critical",
+        "type": "risk_limit",
+        "message": "backtest gate failed: failed gate (profitFactor/sharpe/drawdown)",
+        "timestamp": 1771796747168,
+        "meta": {}
+      },
+      {
+        "id": "3844f7ab-b687-4385-9bd4-e2b52f65e2ae",
+        "level": "critical",
+        "type": "risk_limit",
+        "message": "backtest gate failed: failed gate (profitFactor/sharpe/drawdown)",
+        "timestamp": 1771796567355,
+        "meta": {}
+      },
+      {
+        "id": "c5ef18a1-c03f-4a87-a603-25ae18c41e0f",
+        "level": "critical",
+        "type": "risk_limit",
+        "message": "backtest gate failed: failed gate (profitFactor/sharpe/drawdown)",
+        "timestamp": 1771792250635,
+        "meta": {}
+      },
+      {
+        "id": "c00d95cd-bb97-4745-bc03-56ce2c7d5632",
+        "level": "critical",
+        "type": "risk_limit",
+        "message": "backtest gate failed: failed gate (profitFactor/sharpe/drawdown)",
+        "timestamp": 1771791841860,
+        "meta": {}
+      },
+      {
+        "id": "e1e5c9b8-aa18-43af-b1e4-d8efd26b3d61",
+        "level": "critical",
+        "type": "risk_limit",
+        "message": "backtest gate failed: failed gate (profitFactor/sharpe/drawdown)",
+        "timestamp": 1771791787262,
+        "meta": {}
+      },
+      {
+        "id": "1847a19e-5419-4379-9237-c7f328feaa5b",
+        "level": "critical",
+        "type": "risk_limit",
+        "message": "backtest gate failed: failed gate (profitFactor/sharpe/drawdown)",
+        "timestamp": 1771791726290,
+        "meta": {}
+      },
+      {
+        "id": "4193320a-3f61-4700-ac49-ef9caf5a7e6e",
+        "level": "critical",
+        "type": "risk_limit",
+        "message": "backtest gate failed: failed gate (profitFactor/sharpe/drawdown)",
+        "timestamp": 1771791457868,
+        "meta": {}
+      },
+      {
+        "id": "01c65eba-1e67-487b-af86-b40c90dc0f75",
+        "level": "critical",
+        "type": "risk_limit",
+        "message": "backtest gate failed: failed gate (profitFactor/sharpe/drawdown)",
+        "timestamp": 1771790171586,
+        "meta": {}
+      }
+    ],
+    "auditTail": [
+      {
+        "ts": 1772223872589,
+        "type": "signal_generated",
+        "severity": null,
+        "symbol": null,
+        "detail": null
+      },
+      {
+        "ts": 1772223872586,
+        "type": "signal_generated",
+        "severity": null,
+        "symbol": null,
+        "detail": null
+      },
+      {
+        "ts": 1772223870604,
+        "type": "signal_generated",
+        "severity": null,
+        "symbol": null,
+        "detail": null
+      },
+      {
+        "ts": 1772223870601,
+        "type": "signal_generated",
+        "severity": null,
+        "symbol": null,
+        "detail": null
+      },
+      {
+        "ts": 1772223868516,
+        "type": "signal_generated",
+        "severity": null,
+        "symbol": null,
+        "detail": null
+      },
+      {
+        "ts": 1772223868512,
+        "type": "signal_generated",
+        "severity": null,
+        "symbol": null,
+        "detail": null
+      },
+      {
+        "ts": 1772223866460,
+        "type": "signal_generated",
+        "severity": null,
+        "symbol": null,
+        "detail": null
+      },
+      {
+        "ts": 1772223866457,
+        "type": "signal_generated",
+        "severity": null,
+        "symbol": null,
+        "detail": null
+      },
+      {
+        "ts": 1772223864470,
+        "type": "signal_generated",
+        "severity": null,
+        "symbol": null,
+        "detail": null
+      },
+      {
+        "ts": 1772223864466,
+        "type": "signal_generated",
+        "severity": null,
+        "symbol": null,
+        "detail": null
+      },
+      {
+        "ts": 1772223862483,
+        "type": "signal_generated",
+        "severity": null,
+        "symbol": null,
+        "detail": null
+      },
+      {
+        "ts": 1772223862480,
+        "type": "signal_generated",
+        "severity": null,
+        "symbol": null,
+        "detail": null
+      },
+      {
+        "ts": 1772223860460,
+        "type": "signal_generated",
+        "severity": null,
+        "symbol": null,
+        "detail": null
+      },
+      {
+        "ts": 1772223860456,
+        "type": "signal_generated",
+        "severity": null,
+        "symbol": null,
+        "detail": null
+      },
+      {
+        "ts": 1772223858472,
+        "type": "signal_generated",
+        "severity": null,
+        "symbol": null,
+        "detail": null
+      },
+      {
+        "ts": 1772223858468,
+        "type": "signal_generated",
+        "severity": null,
+        "symbol": null,
+        "detail": null
+      },
+      {
+        "ts": 1772223856454,
+        "type": "signal_generated",
+        "severity": null,
+        "symbol": null,
+        "detail": null
+      },
+      {
+        "ts": 1772223856451,
+        "type": "signal_generated",
+        "severity": null,
+        "symbol": null,
+        "detail": null
+      },
+      {
+        "ts": 1772223854518,
+        "type": "signal_generated",
+        "severity": null,
+        "symbol": null,
+        "detail": null
+      },
+      {
+        "ts": 1772223854515,
+        "type": "signal_generated",
+        "severity": null,
+        "symbol": null,
+        "detail": null
+      }
+    ]
+  },
+  "finalSnapshots": {
+    "rlStatus": {
+      "enabled": true,
+      "modelKind": "rl_linear_q",
+      "initialCapitalUsd": 10000,
+      "equityUsd": 10003.514811156194,
+      "netPnlUsd": 3.5148111561939004,
+      "totalCostsUsd": 0.01844591227129113,
+      "maxDrawdownPct": 0.030436126921281562,
+      "trades": 5,
+      "winRate": 0.8,
+      "profitFactor": 2.2706643596181366,
+      "qGapStats": {
+        "p50": 0.004512744286027992,
+        "p75": 0.007562006838562341,
+        "p90": 0.009913187116835226
+      },
+      "symbols": [
+        "BTCUSDT",
+        "ETHUSDT"
+      ],
+      "openPositions": [
+        {
+          "symbol": "ETHUSDT",
+          "side": "short",
+          "entryPrice": 3521.7249501558044,
+          "entryTs": 1771834740000
+        }
+      ],
+      "guardBlocks": {
+        "confidence": 0,
+        "minHold": 3,
+        "flipCooldown": 0,
+        "confidenceTriggered": 0,
+        "total": 3,
+        "actionsBeforeGuards": 14,
+        "actionsAfterGuards": 11,
+        "confidenceGateEnabled": false,
+        "confidenceQGap": 1
+      }
+    },
+    "runtimeStatus": {
+      "stage": "paper",
+      "killSwitch": {
+        "enabled": false,
+        "reason": ""
+      },
+      "cashUsd": 9977.866727387824,
+      "equityUsd": 9977.789766349733,
+      "realizedPnlUsd": 11.978611337858442,
+      "unrealizedPnlUsd": -0.07696103809061654,
+      "drawdownPct": 0.3425128603495524,
+      "paperMetrics": {
+        "trades": 5,
+        "wins": 4,
+        "losses": 1,
+        "grossProfitUsd": 12.050087358040813,
+        "grossLossUsd": 0.07147602018237084,
+        "netPnlUsd": 11.978611337858442,
+        "maxDrawdownPct": 1.1339790902015094,
+        "winRate": 0.8,
+        "profitFactor": 50
+      },
+      "tinyLiveRiskMultiplier": 0.1,
+      "backtestGate": {
+        "passed": true,
+        "reason": "strategy passed backtest gate (walk-forward informational)"
+      },
+      "recentAlerts": []
+    }
+  }
+}
